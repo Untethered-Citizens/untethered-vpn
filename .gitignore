@@ -1,0 +1,34 @@
+# macOS
+.DS_Store
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+DerivedData/
+build/
+*.ipa
+*.dSYM.zip
+*.dSYM
+*.xcarchive
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Developer-specific settings and secrets — never commit keys
+Config.xcconfig
+Secrets.xcconfig
+*.secret.xcconfig
+ExportOptions.plist
+.env
+.env.*
+
+# WireGuard: never commit a real config, key or local test tunnel
+*.conf
+Local/
+*.local.swift
+
+# wireguard-go build output
+Vendor/**/out/
+Vendor/**/.tmp/
