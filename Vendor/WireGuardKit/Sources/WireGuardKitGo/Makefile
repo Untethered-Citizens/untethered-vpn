@@ -20,14 +20,27 @@ GOARCH_arm64 := arm64
 GOARCH_x86_64 := amd64
 GOOS_macosx := darwin
 GOOS_iphoneos := ios
+# Go has no tvOS target. Building as ios against the tvOS SDK works: Go's linker
+# copies the platform (tvOS or tvOS Simulator) from the cgo objects clang builds.
+GOOS_appletvos := ios
+GOOS_appletvsimulator := ios
+
+# The runtime patch below is tied to the Go release, so the minor version is pinned.
+# Build offline from the committed vendor/ folder, with the local toolchain only.
+GO_VERSION_PINNED := go1.27
+export GOTOOLCHAIN := local
+export GOFLAGS := -mod=vendor
+export GOPROXY := off
 
 build: $(DESTDIR)/libwg-go.a
 version-header: $(DESTDIR)/wireguard-go-version.h
 
 REAL_GOROOT := $(shell go env GOROOT 2>/dev/null)
+REAL_GOVERSION := $(shell env -u GOROOT go env GOVERSION 2>/dev/null)
 export GOROOT := $(BUILDDIR)/goroot
 $(GOROOT)/.prepared:
-	[ -n "$(REAL_GOROOT)" ]
+	[ -n "$(REAL_GOROOT)" ] || { echo "error: Go not found; install Go 1.27.x (brew install go)" >&2; exit 1; }
+	case "$(REAL_GOVERSION)" in $(GO_VERSION_PINNED)|$(GO_VERSION_PINNED).*) ;; *) echo "error: Go $(GO_VERSION_PINNED).x required, found $(REAL_GOVERSION)" >&2; exit 1;; esac
 	mkdir -p "$(GOROOT)"
 	rsync -a --delete --exclude=pkg/obj/go-build "$(REAL_GOROOT)/" "$(GOROOT)/"
 	cat goruntime-*.diff | patch -p1 -f -N -r- -d "$(GOROOT)"
