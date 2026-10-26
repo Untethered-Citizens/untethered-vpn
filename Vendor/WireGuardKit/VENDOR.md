@@ -16,7 +16,8 @@ This folder is a copy of the library parts of [`wireguard-apple`](https://git.zx
 2. **`Package.swift`** declares tvOS 17 (the first tvOS with `NEPacketTunnelProvider`), uses tools version 5.9 to express it, and excludes the Go `vendor/` folder.
 3. **`Makefile`** maps the `appletvos` and `appletvsimulator` SDKs to `GOOS=ios`. Go has no tvOS target, but its linker copies the platform from the cgo objects that clang builds against the tvOS SDK, so the result is tagged tvOS (or tvOS Simulator) correctly.
 4. **`Makefile`** pins Go 1.27.x (the runtime patch `goruntime-boottime-over-monotonic.diff` is tied to the Go release) and builds offline: `GOTOOLCHAIN=local`, `GOFLAGS=-mod=vendor`, `GOPROXY=off`.
-5. **`go.mod`** moves `wireguard-go` from the 2023 revision to `b3bc704ef0ee`, picking up upstream fixes including two from October 2026, and `golang.org/x/sys` to v0.49.0.
+5. **`WireGuardKitC.h`** includes `<sys/types.h>` for `u_int32_t` and friends; Xcode 27's explicit modules refuse the header without it.
+6. **`go.mod`** moves `wireguard-go` from the 2023 revision to `b3bc704ef0ee`, picking up upstream fixes including two from October 2026, and `golang.org/x/sys` to v0.49.0.
 
 ## Updating
 
