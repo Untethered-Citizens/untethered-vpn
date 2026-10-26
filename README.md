@@ -13,6 +13,10 @@ A free, open-source tvOS client for WireGuard® that connects your Apple TV to t
 
 Early development. Not ready to use yet.
 
+## Contributing
+
+Issues and pull requests are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first, and report security problems privately as described in [SECURITY.md](SECURITY.md).
+
 ## Licence
 
 Apache License 2.0 (see [LICENSE](LICENSE)). The name "Untethered VPN", its icon and the Untethered Citizens branding are not covered by the licence. If you publish your own version, please give it a different name and icon.
