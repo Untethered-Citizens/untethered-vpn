@@ -1,0 +1,20 @@
+// Developer-specific build settings for Untethered VPN.
+//
+// These are the defaults. To build with your own Apple developer account,
+// copy this file to Config.xcconfig (git-ignored) in the same folder and
+// change the values there. Config.xcconfig overrides anything set here.
+
+// Your 10-character Apple team ID (Xcode → Settings → Accounts).
+// Empty is fine for simulator builds without signing.
+DEVELOPMENT_TEAM =
+
+// The app's bundle ID. The tunnel extension's ID must start with it.
+APP_BUNDLE_ID = com.untetheredcitizens.vpn
+TUNNEL_BUNDLE_ID = $(APP_BUNDLE_ID).tunnel
+
+// Shared container for non-secret state (App Groups must start with "group.").
+APP_GROUP_ID = group.$(APP_BUNDLE_ID)
+
+// Keychain access group the app and the extension share for private and
+// preshared keys. The signing team prefix is added automatically.
+KEYCHAIN_GROUP = $(APP_BUNDLE_ID).shared

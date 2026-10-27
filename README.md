@@ -13,6 +13,10 @@ A free, open-source tvOS client for WireGuard® that connects your Apple TV to t
 
 Early development. Not ready to use yet.
 
+## Building
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the code layout and how to build and run the app.
+
 ## Contributing
 
 Issues and pull requests are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first, and report security problems privately as described in [SECURITY.md](SECURITY.md).
