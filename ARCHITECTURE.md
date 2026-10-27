@@ -28,6 +28,17 @@ Vendor/WireGuardKit/       vendored wireguard-apple library + wireguard-go (see 
 - `wgQuickText(maskingKeys:)` writes the config back out; masked for the review screen.
 - `WireGuardKey` prints as `(hidden)` everywhere; only `.base64` gives the real value.
 
+## Profiles and tunnels
+
+A profile is a name plus a checked `WireGuardConfig`, identified by a UUID (`Shared/Profiles/TunnelProfile.swift`). Each profile is stored in two places, and only one of them holds secrets:
+
+- **Keychain** (`ConfigKeychain`): the whole `wg-quick` text, keys included, as one generic-password item in the shared access group (`KEYCHAIN_GROUP`). Never synchronised to iCloud; readable after the first unlock so the extension can start on its own.
+- **System VPN preferences**: one `NETunnelProviderManager` per profile. Its protocol configuration (`TunnelProtocolInfo`) holds a persistent reference to the Keychain item (`passwordReference`), the profile ID, a format version and the first peer's endpoint for display. Nothing secret.
+
+`App/Tunnel/TunnelManager.swift` is the app's side: load, save, delete, connect (disconnecting any other profile first), disconnect, and a live `TunnelStatus` per profile. The extension (`TunnelExtension/PacketTunnelProvider.swift`) reads the config through the reference, parses it with our parser, converts it to WireGuardKit's types (`WireGuardConfig+WireGuardKit.swift`) and starts `WireGuardAdapter`. If it can't, it records a `TunnelFailure` in the App Group's defaults and the app shows its message. Logs name the step and the failure, never a key or a config value; wireguard-go's own messages are logged as private.
+
+The Keychain tests skip themselves when the test host is built with `CODE_SIGNING_ALLOWED=NO`, which leaves it without a Keychain entitlement. To run them, test without that flag (with a team in `Config.xcconfig`).
+
 ## Targets
 
 | Target | Product | Notes |
