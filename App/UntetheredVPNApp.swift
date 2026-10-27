@@ -22,7 +22,7 @@ struct UntetheredVPNApp: App {
 
     /// Launch with `-appearance light|dark` to check both, since the tvOS
     /// simulator can't switch its own appearance from the command line.
-    private static var debugColorScheme: ColorScheme? {
+    static var debugColorScheme: ColorScheme? {
         #if DEBUG
         switch UserDefaults.standard.string(forKey: "appearance") {
         case "light": .light

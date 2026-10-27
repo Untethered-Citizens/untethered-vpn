@@ -8,27 +8,46 @@ struct HomeView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var pendingDelete: TunnelManager.Entry?
     @State private var errorMessage: String?
+    @State private var editor: EditorRequest?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 56) {
-            Label("Untethered VPN", systemImage: "network.badge.shield.half.filled")
-                .font(.title2.bold())
-                .foregroundStyle(.secondary)
+            HStack {
+                Label("Untethered VPN", systemImage: "network.badge.shield.half.filled")
+                    .font(.title2.bold())
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if !manager.entries.isEmpty {
+                    Button("Add Profile", systemImage: "plus", action: add)
+                }
+            }
 
             switch manager.entries.count {
             case 0:
                 emptyState
             case 1:
-                ProfileCard(entry: manager.entries[0], toggle: toggle, delete: { pendingDelete = $0 })
+                ProfileCard(entry: manager.entries[0], toggle: toggle, edit: edit, delete: { pendingDelete = $0 })
             default:
-                ProfileList(entries: manager.entries, toggle: toggle, delete: { pendingDelete = $0 })
+                ProfileList(entries: manager.entries, toggle: toggle, edit: edit, delete: { pendingDelete = $0 })
             }
         }
+        // tvOS draws the editor over the home screen without a background of its own
+        .opacity(editor == nil ? 1 : 0)
         .padding(80)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .task(id: scenePhase) {
             if scenePhase == .active { await reload() }
         }
+        .fullScreenCover(item: $editor) { request in
+            ProfileEditor(manager: manager, draft: request.draft, reviewing: request.reviewing, checksAll: request.checksAll) {
+                editor = nil
+            }
+            // A cover doesn't inherit the app's forced appearance
+            .preferredColorScheme(UntetheredVPNApp.debugColorScheme)
+        }
+        #if DEBUG
+        .task { editor = EditorRequest.debugSample() }
+        #endif
         .confirmationDialog(
             "Delete “\(pendingDelete?.name ?? "")”?",
             isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }),
@@ -55,9 +74,25 @@ struct HomeView: View {
             Label("No profiles yet", systemImage: "network.slash")
         } description: {
             Text("A profile holds the settings for your own WireGuard server. Once you add one, you can connect this Apple TV to it from here.")
+        } actions: {
+            Button("Add Profile", systemImage: "plus", action: add)
+                .font(.title3.bold())
         }
         .frame(maxWidth: 1100)
         .frame(maxWidth: .infinity)
+    }
+
+    private func add() {
+        editor = EditorRequest(draft: ProfileDraft())
+    }
+
+    private func edit(_ entry: TunnelManager.Entry) {
+        do {
+            let profile = TunnelProfile(id: entry.id, name: entry.name, config: try manager.config(for: entry.id))
+            editor = EditorRequest(draft: ProfileDraft(editing: profile))
+        } catch {
+            errorMessage = "“\(entry.name)” couldn't be opened for editing. Delete it and add it again."
+        }
     }
 
     private func toggle(_ entry: TunnelManager.Entry) {

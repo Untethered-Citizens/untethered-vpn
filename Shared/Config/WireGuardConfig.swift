@@ -1,3 +1,5 @@
+import Foundation
+
 /// A WireGuard client configuration: one interface and one or more peers.
 /// Values in here have already been validated.
 struct WireGuardConfig: Hashable, Sendable {
@@ -23,6 +25,31 @@ struct WireGuardConfig: Hashable, Sendable {
 
     /// Valid MTU values. 576 is the smallest packet every IPv4 host must accept.
     static let mtuRange: ClosedRange<Int> = 576...65535
+
+    /// Splits a `DNS` value into server addresses and search domains. Nil if
+    /// the list is empty or any entry is neither.
+    static func dnsEntries(_ text: String) -> (servers: [String], searchDomains: [String])? {
+        let entries = text.split(separator: ",", omittingEmptySubsequences: false).map { $0.trimmingCharacters(in: .whitespaces) }
+        var servers: [String] = []
+        var searchDomains: [String] = []
+        for entry in entries {
+            if IPAddressText.isIP(entry) {
+                servers.append(entry)
+            } else if IPAddressText.isHostName(entry) {
+                searchDomains.append(entry)
+            } else {
+                return nil
+            }
+        }
+        return (servers, searchDomains)
+    }
+
+    /// A plain decimal number in range: digits only, no sign or spaces.
+    static func number(_ text: String, in range: ClosedRange<Int>) -> UInt16? {
+        guard (1...5).contains(text.count), text.allSatisfy(\.isASCIIDigit),
+              let value = Int(text), range.contains(value) else { return nil }
+        return UInt16(value)
+    }
 }
 
 extension WireGuardConfig {

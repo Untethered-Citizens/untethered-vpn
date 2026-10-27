@@ -1,0 +1,160 @@
+import SwiftUI
+
+/// The manual-entry form: one peer, grouped into this Apple TV's settings
+/// and the server's. Each field is checked once it has been changed, and
+/// every field is checked when Review is selected.
+struct ProfileForm: View {
+    typealias Field = ProfileDraft.Field
+
+    @Binding var draft: ProfileDraft
+    let review: (TunnelProfile) -> Void
+    let cancel: () -> Void
+
+    @FocusState private var focused: Field?
+    @State private var checked: Set<Field>
+    @State private var showsSummary: Bool
+
+    init(draft: Binding<ProfileDraft>, checksAll: Bool = false, review: @escaping (TunnelProfile) -> Void, cancel: @escaping () -> Void) {
+        _draft = draft
+        _checked = State(initialValue: checksAll ? Set(Field.allCases) : [])
+        _showsSummary = State(initialValue: checksAll)
+        self.review = review
+        self.cancel = cancel
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 48) {
+                Text(draft.isEditing
+                     ? "Change any setting, then select Review. Saved keys stay unless you type new ones."
+                     : "Copy these settings from your WireGuard config. To type with your iPhone, select a field and use the keyboard notification on the phone.")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+
+                section("Profile") {
+                    row(.name, "Name", prompt: "Home", hint: "Shown on the home screen.")
+                }
+
+                section("This Apple TV  ·  [Interface]") {
+                    row(.privateKey, "Private Key", prompt: draft.savedPrivateKey == nil ? "44 characters ending in =" : "Saved. Leave blank to keep it.",
+                        hint: "Shown as dots once entered.", secure: true)
+                    row(.address, "Address", prompt: "10.8.0.2/32", hint: "This Apple TV's address in the tunnel.")
+                    row(.dns, "DNS (optional)", prompt: "192.0.2.53", hint: "Name servers to use while connected, separated by commas.")
+                    row(.mtu, "MTU (optional)", prompt: "Automatic", hint: "Leave blank unless your config sets it.", numeric: true)
+                }
+
+                section("Your Server  ·  [Peer]") {
+                    row(.publicKey, "Public Key", prompt: "44 characters ending in =", hint: "The server's public key.")
+                    row(.presharedKey, "Preshared Key (optional)",
+                        prompt: draft.savedPresharedKey == nil ? "Only if your config has one" : "Saved. Leave blank to keep it.",
+                        hint: "Shown as dots once entered.", secure: true)
+                    if draft.isEditing, draft.savedPresharedKey != nil {
+                        Button("Remove Saved Preshared Key", role: .destructive) {
+                            draft.savedPresharedKey = nil
+                        }
+                    }
+                    row(.endpoint, "Endpoint", prompt: "vpn.example.com:51820", hint: "The server's public address and port.")
+                    row(.allowedIPs, "AllowedIPs", prompt: "0.0.0.0/0, ::/0", hint: "0.0.0.0/0, ::/0 sends all traffic through your server.")
+                    row(.keepalive, "Persistent Keepalive (optional)", prompt: "Off",
+                        hint: "Seconds between keepalive packets. 25 keeps the connection open through hotel routers.", numeric: true)
+                }
+
+                if !draft.otherPeers.isEmpty {
+                    Text("This profile has \(draft.otherPeers.count) more \(draft.otherPeers.count == 1 ? "peer" : "peers"), which stay as they are.")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                }
+
+                VStack(alignment: .leading, spacing: 24) {
+                    if showsSummary, !draft.problemFields.isEmpty {
+                        Label("Fix the settings marked in red, then select Review.", systemImage: "exclamationmark.circle.fill")
+                            .font(.title3)
+                            .foregroundStyle(.red)
+                    }
+                    HStack(spacing: 40) {
+                        Button {
+                            submit()
+                        } label: {
+                            Text("Review").font(.title3.bold()).frame(minWidth: 320)
+                        }
+                        Button("Cancel", role: .cancel, action: cancel)
+                    }
+                }
+            }
+            .frame(maxWidth: 1300, alignment: .leading)
+            .padding(.vertical, 40)
+            .frame(maxWidth: .infinity)
+        }
+        .navigationTitle(draft.isEditing ? "Edit Profile" : "Add Profile")
+    }
+
+    private func submit() {
+        checked = Set(Field.allCases)
+        if let profile = draft.makeProfile() {
+            showsSummary = false
+            review(profile)
+        } else {
+            showsSummary = true
+            focused = draft.problemFields.first
+        }
+    }
+
+    private func section(_ title: String, @ViewBuilder content: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 32) {
+            Text(title)
+                .font(.title3.bold())
+            content()
+        }
+    }
+
+    private func row(_ field: Field, _ title: String, prompt: String, hint: String, secure: Bool = false, numeric: Bool = false) -> some View {
+        let text = Binding {
+            draft[keyPath: Self.keyPath(field)]
+        } set: {
+            draft[keyPath: Self.keyPath(field)] = $0
+            checked.insert(field)
+        }
+        let problem = checked.contains(field) ? draft.problem(in: field) : nil
+
+        return VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.headline)
+            Group {
+                if secure {
+                    SecureField(title, text: text, prompt: Text(prompt))
+                } else {
+                    TextField(title, text: text, prompt: Text(prompt))
+                        .keyboardType(numeric ? .numberPad : .asciiCapable)
+                }
+            }
+            .textInputAutocapitalization(.never)
+            .autocorrectionDisabled()
+            .focused($focused, equals: field)
+
+            if let problem {
+                Label(problem, systemImage: "exclamationmark.circle.fill")
+                    .font(.callout)
+                    .foregroundStyle(.red)
+            } else {
+                Text(hint)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private static func keyPath(_ field: Field) -> WritableKeyPath<ProfileDraft, String> {
+        switch field {
+        case .name: \.name
+        case .privateKey: \.privateKey
+        case .address: \.address
+        case .dns: \.dns
+        case .mtu: \.mtu
+        case .publicKey: \.publicKey
+        case .presharedKey: \.presharedKey
+        case .endpoint: \.endpoint
+        case .allowedIPs: \.allowedIPs
+        case .keepalive: \.keepalive
+        }
+    }
+}
