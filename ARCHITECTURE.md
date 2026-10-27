@@ -39,6 +39,16 @@ A profile is a name plus a checked `WireGuardConfig`, identified by a UUID (`Sha
 
 The Keychain tests skip themselves when the test host is built with `CODE_SIGNING_ALLOWED=NO`, which leaves it without a Keychain entitlement. To run them, test without that flag (with a team in `Config.xcconfig`).
 
+## Home screen
+
+`App/Home/`: `HomeView` shows a large `ProfileCard` for one profile, a `ProfileList` for several, and an empty state for none; `StatusLabel` is the coloured dot and status text. Delete is a context menu (press and hold) with a confirmation.
+
+The simulator can't run tunnels, so Debug builds take two launch arguments for checking layouts: `-sampleProfiles one|several|failed|empty` fills the screen with sample entries (connecting one pretends to succeed; nothing touches the system or the Keychain), and `-appearance light|dark` forces the appearance, which the tvOS simulator can't switch from the command line:
+
+```sh
+xcrun simctl launch <simulator id> com.untetheredcitizens.vpn -sampleProfiles several -appearance light
+```
+
 ## Targets
 
 | Target | Product | Notes |
