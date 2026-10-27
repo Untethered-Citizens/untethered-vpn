@@ -27,6 +27,10 @@ final class TunnelManager {
     @ObservationIgnored private let sharedDefaults: UserDefaults?
     @ObservationIgnored private var managers: [UUID: NETunnelProviderManager] = [:]
     @ObservationIgnored private var statusObserver: (any NSObjectProtocol)?
+    #if DEBUG
+    /// Sample entries for checking layouts in the simulator, which can't run tunnels.
+    @ObservationIgnored private var usesSamples = false
+    #endif
 
     init(configuration: AppConfiguration) {
         self.configuration = configuration
@@ -44,6 +48,9 @@ final class TunnelManager {
 
     /// Loads the saved profiles from the system's VPN preferences.
     func load() async throws {
+        #if DEBUG
+        if usesSamples { return }
+        #endif
         let all = try await NETunnelProviderManager.loadAllFromPreferences()
         var managers: [UUID: NETunnelProviderManager] = [:]
         var entries: [Entry] = []
@@ -88,6 +95,9 @@ final class TunnelManager {
 
     /// Deletes a profile and its Keychain item.
     func delete(_ id: UUID) async throws {
+        #if DEBUG
+        if usesSamples { entries.removeAll { $0.id == id }; return }
+        #endif
         if let manager = managers[id] {
             manager.connection.stopVPNTunnel()
             try await manager.removeFromPreferences()
@@ -99,6 +109,9 @@ final class TunnelManager {
 
     /// Connects a profile, disconnecting any other first.
     func connect(_ id: UUID) async throws {
+        #if DEBUG
+        if usesSamples { sampleConnect(id); return }
+        #endif
         guard let manager = managers[id] else { return }
         for (otherID, other) in managers where otherID != id && TunnelStatus(other.connection.status).isActive {
             other.connection.stopVPNTunnel()
@@ -121,6 +134,9 @@ final class TunnelManager {
 
     /// Disconnects a profile.
     func disconnect(_ id: UUID) {
+        #if DEBUG
+        if usesSamples { setStatus(.disconnected, for: id); return }
+        #endif
         managers[id]?.connection.stopVPNTunnel()
     }
 
@@ -139,3 +155,40 @@ final class TunnelManager {
         entries[index].status = status
     }
 }
+
+#if DEBUG
+extension TunnelManager {
+
+    /// Which sample entries to show, from the launch argument
+    /// `-sampleProfiles one|several|failed|empty`.
+    enum Samples: String {
+        case one, several, failed, empty
+    }
+
+    /// Replaces the real profiles with sample entries. Connecting a sample
+    /// pretends to succeed; nothing touches the system or the Keychain.
+    func showSamples(_ samples: Samples) {
+        usesSamples = true
+        func entry(_ name: String, _ server: String, _ status: TunnelStatus) -> Entry {
+            Entry(id: UUID(), name: name, serverAddress: server, status: status)
+        }
+        entries = switch samples {
+        case .one: [entry("Home", "vpn.example.com:51820", .disconnected)]
+        case .several: [
+            entry("Cottage", "198.51.100.7:51820", .disconnected),
+            entry("Home", "vpn.example.com:51820", .connected),
+            entry("Office", "office.example.net:443", .disconnected),
+        ]
+        case .failed: [entry("Home", "vpn.example.com:51820", .failed(TunnelFailure.endpointUnresolved.message))]
+        case .empty: []
+        }
+    }
+
+    private func sampleConnect(_ id: UUID) {
+        for entry in entries where entry.id != id && entry.status.isActive {
+            setStatus(.disconnected, for: entry.id)
+        }
+        setStatus(.connected, for: id)
+    }
+}
+#endif

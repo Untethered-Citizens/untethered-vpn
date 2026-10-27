@@ -62,6 +62,14 @@ struct TunnelStatusTests {
         #expect(TunnelStatus(.disconnecting) == .disconnecting)
     }
 
+    @Test func buttonTitleFollowsStatus() {
+        #expect(TunnelStatus.disconnected.actionTitle == "Connect")
+        #expect(TunnelStatus.failed("x").actionTitle == "Connect")
+        #expect(TunnelStatus.connecting.actionTitle == "Disconnect")
+        #expect(TunnelStatus.connected.actionTitle == "Disconnect")
+        #expect(TunnelStatus.disconnecting.actionTitle == "Disconnecting…")
+    }
+
     @Test func activeOnlyWhileUpOrComingUp() {
         #expect(TunnelStatus.connecting.isActive)
         #expect(TunnelStatus.connected.isActive)
