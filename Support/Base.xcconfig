@@ -1,0 +1,4 @@
+// Project-wide base configuration. Defaults come from the committed sample;
+// a developer's own Config.xcconfig, if present, overrides them.
+#include "../Config.sample.xcconfig"
+#include? "../Config.xcconfig"
