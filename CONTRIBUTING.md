@@ -11,14 +11,20 @@ Thanks for your interest. This is a small project with one maintainer, so the pr
 3. **Make small commits** with imperative messages ("Add profile list").
 4. **Before opening the pull request:** it builds, all tests pass, new logic has tests, and UI changes have been checked in the tvOS simulator (light and dark mode where it matters).
 5. **Open the pull request** and fill in the template. Put `Closes #N` on its own line.
-6. **CI**, where set up, builds and tests every pull request. It must be green before merging.
+6. **CI** scans every push and pull request for secrets; building and testing on CI comes later. Every check must be green before merging.
 7. **Review.** The maintainer reviews every pull request and may ask for changes. Only the maintainer merges, using squash merge.
 
 Anything that touches the tunnel, the network extension or the import server is proven on a real Apple TV, not just the simulator. Say in the pull request which device and tvOS version you tested on.
 
 ## Building and testing
 
-Untethered VPN is built with Xcode for tvOS 26 or later, and needs Go to cross-compile wireguard-go. Step-by-step build instructions will be added here once the Xcode project exists. Running it on an Apple TV needs a paid Apple developer account, because the app uses a Network Extension.
+Untethered VPN is built with Xcode for tvOS 26 or later, and needs Go to cross-compile wireguard-go. [ARCHITECTURE.md](ARCHITECTURE.md) has the code layout and the build, test and run commands. Running it on an Apple TV needs a paid Apple developer account, because the app uses a Network Extension.
+
+Every push and pull request is scanned for secrets with [gitleaks](https://github.com/gitleaks/gitleaks). To run the same scan before you push:
+
+```sh
+gitleaks git . --redact
+```
 
 ## The rules that keep it trustworthy
 
