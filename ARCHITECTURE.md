@@ -12,11 +12,21 @@ App/                       tvOS SwiftUI app            → target UntetheredVPN
 TunnelExtension/           NEPacketTunnelProvider      → target UntetheredVPNTunnel
 Shared/                    code compiled into both the app and the extension
 Tests/                     Swift Testing unit tests    → target UntetheredVPNTests
+  Fixtures.swift           synthetic configs; keys are random bytes made at run time
 Support/                   Info.plists, entitlements, Base.xcconfig
 Vendor/WireGuardKit/       vendored wireguard-apple library + wireguard-go (see VENDOR.md)
 ```
 
 `App/`, `TunnelExtension/`, `Shared/` and `Tests/` are folder-synced groups: a Swift file added to one of those folders is part of its target(s) automatically, with no project-file edit. `Shared/` belongs to both the app and the extension, so its code is compiled twice; it must not import anything only one of them links (WireGuardKit is extension-only).
+
+## Config parsing
+
+`Shared/Config/` reads and writes `wg-quick` text without WireGuardKit, so both the app (import preview, manual entry) and the extension can use it:
+
+- `WireGuardConfig.parse(_:)` returns a validated `WireGuardConfig` and a list of `ConfigWarning`s, or throws a `ConfigError`. Errors and warnings name the section, setting and line, never a value.
+- The validators are failable initialisers: `WireGuardKey(base64:)`, `CIDRRange(_:)` and `CIDRRange.list(_:)`, `PeerEndpoint(_:)`. Manual entry uses them field by field.
+- `wgQuickText(maskingKeys:)` writes the config back out; masked for the review screen.
+- `WireGuardKey` prints as `(hidden)` everywhere; only `.base64` gives the real value.
 
 ## Targets
 
@@ -52,8 +62,10 @@ Simulator build and tests:
 ```sh
 xcodebuild -scheme UntetheredVPN \
   -destination 'platform=tvOS Simulator,name=Apple TV 4K (3rd generation)' \
-  CODE_SIGNING_ALLOWED=NO test
+  -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO test
 ```
+
+Parallel testing clones the simulator, which takes minutes; the suite itself runs in well under a second.
 
 Device build: put your team ID in `Config.xcconfig` (copy `Config.sample.xcconfig`), then:
 
