@@ -30,6 +30,7 @@ final class TunnelManager {
     #if DEBUG
     /// Sample entries for checking layouts in the simulator, which can't run tunnels.
     @ObservationIgnored private var usesSamples = false
+    @ObservationIgnored private var sampleConfigs: [UUID: WireGuardConfig] = [:]
     #endif
 
     init(configuration: AppConfiguration) {
@@ -71,6 +72,9 @@ final class TunnelManager {
 
     /// Saves a new profile or replaces an existing one with the same ID.
     func save(_ profile: TunnelProfile) async throws {
+        #if DEBUG
+        if usesSamples { sampleSave(profile); return }
+        #endif
         let reference = try keychain.save(profile.config.wgQuickText(), for: profile.id)
         let info = TunnelProtocolInfo(profile: profile, keychainReference: reference)
         let manager = managers[profile.id] ?? NETunnelProviderManager()
@@ -90,7 +94,10 @@ final class TunnelManager {
 
     /// The saved config of a profile, for editing.
     func config(for id: UUID) throws -> WireGuardConfig {
-        try WireGuardConfig.parse(keychain.text(for: id)).config
+        #if DEBUG
+        if usesSamples, let config = sampleConfigs[id] { return config }
+        #endif
+        return try WireGuardConfig.parse(keychain.text(for: id)).config
     }
 
     /// Deletes a profile and its Keychain item.
@@ -181,6 +188,19 @@ extension TunnelManager {
         ]
         case .failed: [entry("Home", "vpn.example.com:51820", .failed(TunnelFailure.endpointUnresolved.message))]
         case .empty: []
+        }
+    }
+
+    /// Saving a sample keeps it in memory only.
+    private func sampleSave(_ profile: TunnelProfile) {
+        sampleConfigs[profile.id] = profile.config
+        let entry = Entry(id: profile.id, name: profile.name,
+                          serverAddress: profile.config.peers.first?.endpoint.description ?? "", status: .disconnected)
+        if let index = entries.firstIndex(where: { $0.id == profile.id }) {
+            entries[index].name = entry.name
+            entries[index].serverAddress = entry.serverAddress
+        } else {
+            entries.append(entry)
         }
     }
 

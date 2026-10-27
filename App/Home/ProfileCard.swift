@@ -5,6 +5,7 @@ import SwiftUI
 struct ProfileCard: View {
     let entry: TunnelManager.Entry
     let toggle: (TunnelManager.Entry) -> Void
+    let edit: (TunnelManager.Entry) -> Void
     let delete: (TunnelManager.Entry) -> Void
 
     var body: some View {
@@ -29,10 +30,11 @@ struct ProfileCard: View {
             }
             .disabled(entry.status == .disconnecting)
             .contextMenu {
+                Button("Edit Profile", systemImage: "pencil") { edit(entry) }
                 Button("Delete Profile", systemImage: "trash", role: .destructive) { delete(entry) }
             }
 
-            Text("To delete this profile, press and hold the button.")
+            Text("To edit or delete this profile, press and hold the button.")
                 .font(.body)
                 .foregroundStyle(.secondary)
         }

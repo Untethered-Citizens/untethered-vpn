@@ -49,6 +49,17 @@ The simulator can't run tunnels, so Debug builds take two launch arguments for c
 xcrun simctl launch <simulator id> com.untetheredcitizens.vpn -sampleProfiles several -appearance light
 ```
 
+## Adding and editing profiles
+
+`App/Editor/`: `ProfileEditor` is a full-screen cover holding a `ProfileDraft` and a navigation stack of `ProfileForm` → `ProfileReview`. One peer only (D30).
+
+- `ProfileDraft` keeps one string per setting and checks each with the same validators as the config parser (`WireGuardKey`, `CIDRRange`, `PeerEndpoint`, `WireGuardConfig.dnsEntries` and `number`). Problems are plain sentences that never repeat the value. `makeProfile()` returns the profile only when every field is valid.
+- Editing starts with the key fields blank; a blank key field keeps the saved key, so saved keys never return to the screen. ListenPort and any further peers (from a future QR import) are kept as they are.
+- The form shows a field's problem once the field has changed, and every problem when Review is selected. Keys are typed into `SecureField`s; the review screen masks the private and preshared keys.
+- Nothing is saved until Save on the review screen, which calls `TunnelManager.save`.
+
+In Debug builds, `-sampleEditor add|filled|errors|review|edit` opens the editor at launch with sample values (random keys, documentation addresses). With `-sampleProfiles`, saving keeps the profile in memory only.
+
 ## Targets
 
 | Target | Product | Notes |

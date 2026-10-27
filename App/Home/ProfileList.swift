@@ -5,11 +5,12 @@ import SwiftUI
 struct ProfileList: View {
     let entries: [TunnelManager.Entry]
     let toggle: (TunnelManager.Entry) -> Void
+    let edit: (TunnelManager.Entry) -> Void
     let delete: (TunnelManager.Entry) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
-            Text("Select a profile to connect or disconnect it. To delete one, press and hold it.")
+            Text("Select a profile to connect or disconnect it. To edit or delete one, press and hold it.")
                 .font(.body)
                 .foregroundStyle(.secondary)
 
@@ -32,6 +33,7 @@ struct ProfileList: View {
                 }
                 .disabled(entry.status == .disconnecting)
                 .contextMenu {
+                    Button("Edit Profile", systemImage: "pencil") { edit(entry) }
                     Button("Delete Profile", systemImage: "trash", role: .destructive) { delete(entry) }
                 }
             }

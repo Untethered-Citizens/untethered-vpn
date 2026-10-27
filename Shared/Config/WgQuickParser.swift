@@ -172,26 +172,20 @@ private struct WgQuickParser {
 
         var interface = WireGuardConfig.Interface(privateKey: privateKey, addresses: addresses)
         for line in lines["DNS"] ?? [] {
-            let entries = line.value.split(separator: ",", omittingEmptySubsequences: false).map { $0.trimmingCharacters(in: .whitespaces) }
-            guard !entries.contains(where: \.isEmpty) else { throw .invalidValue(section, key: "DNS", line: line.number) }
-            for entry in entries {
-                if IPAddressText.isIP(entry) {
-                    interface.dnsServers.append(entry)
-                } else if IPAddressText.isHostName(entry) {
-                    interface.dnsSearchDomains.append(entry)
-                } else {
-                    throw .invalidValue(section, key: "DNS", line: line.number)
-                }
+            guard let dns = WireGuardConfig.dnsEntries(line.value) else {
+                throw .invalidValue(section, key: "DNS", line: line.number)
             }
+            interface.dnsServers += dns.servers
+            interface.dnsSearchDomains += dns.searchDomains
         }
         if let line = lines["MTU"]?.first {
-            guard let mtu = Self.number(line.value, in: WireGuardConfig.mtuRange) else {
+            guard let mtu = WireGuardConfig.number(line.value, in: WireGuardConfig.mtuRange) else {
                 throw .invalidValue(section, key: "MTU", line: line.number)
             }
             interface.mtu = mtu
         }
         if let line = lines["ListenPort"]?.first {
-            guard let port = Self.number(line.value, in: 0...65535) else {
+            guard let port = WireGuardConfig.number(line.value, in: 0...65535) else {
                 throw .invalidValue(section, key: "ListenPort", line: line.number)
             }
             interface.listenPort = port
@@ -236,19 +230,12 @@ private struct WgQuickParser {
         if let line = lines["PersistentKeepalive"]?.first {
             if line.value.lowercased() == "off" {
                 peer.persistentKeepalive = nil
-            } else if let seconds = Self.number(line.value, in: 0...65535) {
+            } else if let seconds = WireGuardConfig.number(line.value, in: 0...65535) {
                 peer.persistentKeepalive = seconds == 0 ? nil : seconds
             } else {
                 throw .invalidValue(section, key: "PersistentKeepalive", line: line.number)
             }
         }
         return peer
-    }
-
-    /// A plain decimal number in range: digits only, no sign or spaces.
-    private static func number(_ text: String, in range: ClosedRange<Int>) -> UInt16? {
-        guard (1...5).contains(text.count), text.allSatisfy(\.isASCIIDigit),
-              let value = Int(text), range.contains(value) else { return nil }
-        return UInt16(value)
     }
 }
