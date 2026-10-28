@@ -1,0 +1,147 @@
+:root {
+  --background: #f5f5f7;
+  --surface: #ffffff;
+  --text: #1d1d1f;
+  --secondary: #5f5f66;
+  --border: #c9c9cf;
+  --accent: #0a63c9;
+  --accent-text: #ffffff;
+  --success: #1c7a3a;
+  --error: #b3261e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #000000;
+    --surface: #1c1c1e;
+    --text: #f5f5f7;
+    --secondary: #a1a1a8;
+    --border: #3a3a3f;
+    --accent: #4c9bff;
+    --accent-text: #000000;
+    --success: #5fd07f;
+    --error: #ff7b72;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--text);
+  font: 17px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.brand {
+  margin: 0;
+  color: var(--secondary);
+  font-weight: 600;
+}
+
+h1 {
+  margin: 4px 0 24px;
+  font-size: 26px;
+  line-height: 1.2;
+}
+
+label {
+  display: block;
+  margin-top: 20px;
+  font-weight: 600;
+}
+
+input[type="text"], textarea {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+textarea {
+  font: 14px/1.4 ui-monospace, Menlo, monospace;
+  resize: vertical;
+}
+
+input:focus, textarea:focus, button:focus-visible, .file-button:focus-within {
+  outline: 3px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.hint, .note {
+  margin: 6px 0 0;
+  color: var(--secondary);
+  font-size: 15px;
+}
+
+.note { margin-top: 32px; }
+
+.file-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 10px;
+}
+
+.file-row .hint { margin: 0; }
+
+/* The real file input is visually hidden; its label is the button. */
+#file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.file-button {
+  display: inline-block;
+  margin: 0;
+  padding: 8px 14px;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button {
+  display: block;
+  width: 100%;
+  margin-top: 28px;
+  padding: 14px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--accent-text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:disabled { opacity: 0.5; cursor: default; }
+
+.message {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--surface);
+  border-left: 4px solid var(--secondary);
+}
+
+.message.success { border-left-color: var(--success); }
+.message.error { border-left-color: var(--error); }
+
+[hidden] { display: none !important; }

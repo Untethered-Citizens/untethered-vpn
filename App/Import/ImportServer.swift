@@ -70,6 +70,8 @@ final class ImportServer: @unchecked Sendable {
         let files: [(path: String, name: String, ext: String, type: String)] = [
             ("", "import", "html", HTTPResponse.html),
             ("nacl.js", "nacl", "js", HTTPResponse.javaScript),
+            ("import.js", "import", "js", HTTPResponse.javaScript),
+            ("import.css", "import", "css", HTTPResponse.css),
         ]
         var assets: [String: ImportSession.Asset] = [:]
         for file in files {

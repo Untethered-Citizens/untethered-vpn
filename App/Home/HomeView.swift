@@ -9,6 +9,7 @@ struct HomeView: View {
     @State private var pendingDelete: TunnelManager.Entry?
     @State private var errorMessage: String?
     @State private var editor: EditorRequest?
+    @State private var adding: AddRequest?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 56) {
@@ -32,7 +33,7 @@ struct HomeView: View {
             }
         }
         // tvOS draws the editor over the home screen without a background of its own
-        .opacity(editor == nil ? 1 : 0)
+        .opacity(editor == nil && adding == nil ? 1 : 0)
         .padding(80)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .task(id: scenePhase) {
@@ -45,8 +46,15 @@ struct HomeView: View {
             // A cover doesn't inherit the app's forced appearance
             .preferredColorScheme(UntetheredVPNApp.debugColorScheme)
         }
+        .fullScreenCover(item: $adding) { request in
+            AddProfileView(manager: manager, done: { adding = nil }, method: request.method)
+                .preferredColorScheme(UntetheredVPNApp.debugColorScheme)
+        }
         #if DEBUG
-        .task { editor = EditorRequest.debugSample() }
+        .task {
+            editor = EditorRequest.debugSample()
+            adding = AddRequest.debugSample()
+        }
         #endif
         .confirmationDialog(
             "Delete “\(pendingDelete?.name ?? "")”?",
@@ -83,7 +91,7 @@ struct HomeView: View {
     }
 
     private func add() {
-        editor = EditorRequest(draft: ProfileDraft())
+        adding = AddRequest()
     }
 
     private func edit(_ entry: TunnelManager.Entry) {

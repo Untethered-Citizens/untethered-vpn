@@ -114,6 +114,7 @@ struct HTTPRequestParser {
 struct HTTPResponse: Equatable, Sendable {
     static let html = "text/html; charset=utf-8"
     static let javaScript = "text/javascript; charset=utf-8"
+    static let css = "text/css; charset=utf-8"
     static let json = "application/json"
     static let text = "text/plain; charset=utf-8"
 
