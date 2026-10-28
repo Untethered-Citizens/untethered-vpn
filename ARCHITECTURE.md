@@ -15,6 +15,8 @@ Tests/                     Swift Testing unit tests    → target UntetheredVPNT
   Fixtures.swift           synthetic configs; keys are random bytes made at run time
 Support/                   Info.plists, entitlements, Base.xcconfig
 Vendor/WireGuardKit/       vendored wireguard-apple library + wireguard-go (see VENDOR.md)
+Vendor/TweetNaCl/          vendored TweetNaCl (C) and tweetnacl-js for the QR import (see VENDOR.md)
+THIRD_PARTY_LICENSES.md    licences of everything vendored
 ```
 
 `App/`, `TunnelExtension/`, `Shared/` and `Tests/` are folder-synced groups: a Swift file added to one of those folders is part of its target(s) automatically, with no project-file edit. `Shared/` belongs to both the app and the extension, so its code is compiled twice; it must not import anything only one of them links (WireGuardKit is extension-only).
@@ -60,11 +62,23 @@ xcrun simctl launch <simulator id> com.untetheredcitizens.vpn -sampleProfiles se
 
 In Debug builds, `-sampleEditor add|filled|errors|review|edit` opens the editor at launch with sample values (random keys, documentation addresses). With `-sampleProfiles`, saving keeps the profile in memory only.
 
+## QR import
+
+The phone encrypts the config in the import page and the app decrypts it, so the config never crosses the local network in the clear. Browsers only offer WebCrypto to HTTPS pages, and the import page is plain HTTP, so the page uses tweetnacl-js and the app uses TweetNaCl, the C library it was ported from (both in `Vendor/TweetNaCl/`).
+
+`App/Import/SecretBox.swift` wraps TweetNaCl's `secretbox` (XSalsa20-Poly1305):
+
+- `SecretBox.Key.random()` makes a fresh 32-byte key per import session; `base64URL` is how it travels in the URL fragment (43 characters, no padding). Like `WireGuardKey`, a key's description is always masked.
+- A sealed message is the 24-byte nonce followed by tweetnacl-js's box (16-byte tag, then the ciphertext). `SecretBox.open(_:key:)` returns nil for a wrong key, any changed byte, or input too short to be valid, without saying which.
+- `Vendor/TweetNaCl/JS/nacl.js` is copied into the app bundle; the import page will be served with it. `SecretBoxTests` loads that same file into JavaScriptCore and checks both directions against the C code.
+
+Only the app links TweetNaCl; the tunnel extension doesn't need it.
+
 ## Targets
 
 | Target | Product | Notes |
 |---|---|---|
-| `UntetheredVPN` | `UntetheredVPN.app` | Embeds the extension. |
+| `UntetheredVPN` | `UntetheredVPN.app` | Embeds the extension. Links `CTweetNaCl` (local package `Vendor/TweetNaCl`) and bundles `nacl.js`. |
 | `UntetheredVPNTunnel` | `UntetheredVPNTunnel.appex` | Links WireGuardKit (local package) and depends on `WireGuardGoBridge`. |
 | `WireGuardGoBridge` | `libwg-go.a` | External build target: runs `make` in `Vendor/WireGuardKit/Sources/WireGuardKitGo` to cross-compile wireguard-go for `appletvos` or `appletvsimulator`. Needs Go 1.27.x. |
 | `UntetheredVPNTests` | `UntetheredVPNTests.xctest` | Hosted in the app; `@testable import UntetheredVPN`. |

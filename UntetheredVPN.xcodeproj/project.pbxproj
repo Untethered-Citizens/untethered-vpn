@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		A10000000000000000000001 /* UntetheredVPNTunnel.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A20000000000000000000002 /* UntetheredVPNTunnel.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A10000000000000000000002 /* WireGuardKit in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000002 /* WireGuardKit */; };
+		A10000000000000000000003 /* CTweetNaCl in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000004 /* CTweetNaCl */; };
+		A10000000000000000000004 /* nacl.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* nacl.js */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -59,6 +61,7 @@
 		A20000000000000000000013 /* UntetheredVPN.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = UntetheredVPN.entitlements; sourceTree = "<group>"; };
 		A20000000000000000000014 /* UntetheredVPNTunnel-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "UntetheredVPNTunnel-Info.plist"; sourceTree = "<group>"; };
 		A20000000000000000000015 /* UntetheredVPNTunnel.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = UntetheredVPNTunnel.entitlements; sourceTree = "<group>"; };
+		A20000000000000000000016 /* nacl.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = nacl.js; path = Vendor/TweetNaCl/JS/nacl.js; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -89,6 +92,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A10000000000000000000003 /* CTweetNaCl in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -119,6 +123,7 @@
 				A40000000000000000000003 /* Shared */,
 				A40000000000000000000004 /* Tests */,
 				A40000000000000000000012 /* Support */,
+				A40000000000000000000013 /* Vendor */,
 				A40000000000000000000011 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -143,6 +148,14 @@
 				A20000000000000000000015 /* UntetheredVPNTunnel.entitlements */,
 			);
 			path = Support;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000013 /* Vendor */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000016 /* nacl.js */,
+			);
+			name = Vendor;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -184,6 +197,9 @@
 				A40000000000000000000003 /* Shared */,
 			);
 			name = UntetheredVPN;
+			packageProductDependencies = (
+				A90000000000000000000004 /* CTweetNaCl */,
+			);
 			productName = UntetheredVPN;
 			productReference = A20000000000000000000001 /* UntetheredVPN.app */;
 			productType = "com.apple.product-type.application";
@@ -260,6 +276,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				A90000000000000000000001 /* XCLocalSwiftPackageReference "Vendor/WireGuardKit" */,
+				A90000000000000000000003 /* XCLocalSwiftPackageReference "Vendor/TweetNaCl" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = A40000000000000000000011 /* Products */;
@@ -279,6 +296,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A10000000000000000000004 /* nacl.js in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -543,12 +561,20 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Vendor/WireGuardKit;
 		};
+		A90000000000000000000003 /* XCLocalSwiftPackageReference "Vendor/TweetNaCl" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Vendor/TweetNaCl;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		A90000000000000000000002 /* WireGuardKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = WireGuardKit;
+		};
+		A90000000000000000000004 /* CTweetNaCl */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CTweetNaCl;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
