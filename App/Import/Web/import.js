@@ -88,6 +88,8 @@
     status.hidden = false;
   }
 
+  // The file input has no accept list: iOS has no file type for .conf and
+  // would grey those files out, so any file can be picked and checked here.
   fileInput.addEventListener('change', function () {
     var file = fileInput.files && fileInput.files[0];
     fileInput.value = '';
@@ -98,7 +100,12 @@
     }
     var reader = new FileReader();
     reader.onload = function () {
-      configField.value = String(reader.result);
+      var text = String(reader.result);
+      if (!/^\s*\[Interface\]/im.test(text)) {
+        show('That file doesn\u2019t look like a WireGuard config. Choose the .conf file, which starts with [Interface].', 'error');
+        return;
+      }
+      configField.value = text;
       status.hidden = true;
     };
     reader.onerror = function () { show('That file couldn’t be read. Try pasting the config instead.', 'error'); };
