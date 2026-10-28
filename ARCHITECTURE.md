@@ -74,6 +74,29 @@ The phone encrypts the config in the import page and the app decrypts it, so the
 
 Only the app links TweetNaCl; the tunnel extension doesn't need it.
 
+### The import server
+
+`App/Import/ImportServer.swift` is the one-time web server the phone talks to. It listens only on the TV's own address on Ethernet or Wi-Fi (`LocalAddress`), never on a VPN tunnel interface, on a port the system picks. It reports `.ready(url:expires:)` once, then exactly one `.ended(_)`: `imported(ImportedProfile)`, `cancelled`, `timedOut`, `tooManyBadRequests` or `failed`. After it ends, nothing is listening. Events arrive on the server's own queue.
+
+The rules live in `ImportSession` (no networking, fully unit-tested):
+
+- **URL:** `http://<TV address>:<port>/<token>/#<key>`. The token is 128 random bits (22 base64url characters). The key never reaches the server, because browsers don't send the fragment.
+- **Answers:** `GET /<token>/` (the page, `App/Import/Web/import.html`) and `GET /<token>/nacl.js`, from the bundle; `POST /<token>/` (the submission). `/<token>` redirects to `/<token>/`. Everything else is a bare 404.
+- **Submission:** the page seals `{"name": "…", "config": "…"}` as JSON with `SecretBox` and posts it as base64 text.
+  - A valid one ends the session.
+  - A readable one with a bad name or config gets a 422 with the reason in plain words (never the value), and the session stays open for a fix.
+- **Bad requests:** wrong token, wrong method, malformed or oversized requests, and anything that won't decrypt. After `maxBadRequests` (10) the session ends. `/favicon.ico` doesn't count.
+- **Limits** (in `HTTPRequestParser` and the server):
+  - 8 KB of headers and a 16 KB body, checked before buffering more
+  - no chunked bodies
+  - one request per connection
+  - at most 4 connections, each closed after 10 seconds
+  - the whole session ends after 5 minutes
+- **Replies:** every reply carries `Cache-Control: no-store`, `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff` and `Connection: close`. HTML also gets a strict `Content-Security-Policy`: only files from this server, no inline script, no framing.
+- **Logging:** the server logs only that it started, its HTTP status codes, and how it ended. It never logs paths, bodies, the token or the key.
+
+`ImportServerTests` runs the real server on 127.0.0.1 (`binding: .loopback`) and talks raw HTTP to it.
+
 ## Targets
 
 | Target | Product | Notes |
