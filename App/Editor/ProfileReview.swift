@@ -1,11 +1,17 @@
 import SwiftUI
 
 /// The last step before saving: every setting of the profile, with the
-/// private and preshared keys masked. Nothing is saved until Save.
+/// private and preshared keys masked, and anything the parser ignored.
+/// Nothing is saved until Save.
 struct ProfileReview: View {
     let manager: TunnelManager
     let profile: TunnelProfile
     let isEditing: Bool
+    var warnings: [ConfigWarning] = []
+    /// The second button: "Back" to the form by default; an import passes
+    /// "Cancel" and an action that discards the profile.
+    var cancelTitle = "Back"
+    var cancel: (() -> Void)?
     let done: () -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -20,6 +26,16 @@ struct ProfileReview: View {
             Text("Check these settings against your config. Keys stay hidden.")
                 .font(.body)
                 .foregroundStyle(.secondary)
+
+            if !warnings.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(warnings, id: \.self) { warning in
+                        Label(warning.message, systemImage: "exclamationmark.triangle")
+                            .font(.callout)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
 
             HStack(alignment: .top, spacing: 80) {
                 group("This Apple TV  ·  [Interface]", rows: [
@@ -57,8 +73,10 @@ struct ProfileReview: View {
                     .frame(minWidth: 320)
                 }
                 .disabled(isSaving)
-                Button("Back") { dismiss() }
-                    .disabled(isSaving)
+                Button(cancelTitle) {
+                    if let cancel { cancel() } else { dismiss() }
+                }
+                .disabled(isSaving)
             }
         }
         .padding(.vertical, 40)

@@ -4,11 +4,41 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
 <link rel="icon" href="data:,">
-<title>Untethered VPN import</title>
+<link rel="stylesheet" href="import.css">
+<title>Send a profile · Untethered VPN</title>
 </head>
 <body>
-<h1>Untethered VPN</h1>
-<p>The import form isn't in this build yet.</p>
+<main>
+  <p class="brand">Untethered VPN</p>
+  <h1>Send a profile to your Apple TV</h1>
+
+  <p id="link-problem" class="message error" hidden>
+    This link is incomplete, so it can't encrypt anything. Scan the code on the TV again.
+  </p>
+
+  <form id="form" novalidate>
+    <label for="name">Name</label>
+    <input id="name" name="name" type="text" value="Home" maxlength="40" autocomplete="off" autocapitalize="words" required>
+    <p class="hint">Shown on the TV's home screen.</p>
+
+    <label for="config">WireGuard config</label>
+    <textarea id="config" name="config" rows="12" spellcheck="false" autocomplete="off" autocapitalize="off"
+      placeholder="[Interface]&#10;PrivateKey = …&#10;Address = …&#10;&#10;[Peer]&#10;PublicKey = …&#10;Endpoint = …" required></textarea>
+    <div class="file-row">
+      <label class="file-button" for="file">Choose file…</label>
+      <input id="file" type="file" accept=".conf,text/plain">
+      <span class="hint">or paste the whole <code>.conf</code> above.</span>
+    </div>
+
+    <button id="send" type="submit">Send to Apple TV</button>
+    <p id="status" class="message" role="status" aria-live="polite" hidden></p>
+  </form>
+
+  <p class="note">The config is encrypted on this phone before it's sent, and it goes only to your Apple TV on this network. On the TV, check the settings and choose Save.</p>
+</main>
+<script src="nacl.js"></script>
+<script src="import.js"></script>
 </body>
 </html>

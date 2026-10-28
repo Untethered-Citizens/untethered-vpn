@@ -97,6 +97,29 @@ The rules live in `ImportSession` (no networking, fully unit-tested):
 
 `ImportServerTests` runs the real server on 127.0.0.1 (`binding: .loopback`) and talks raw HTTP to it.
 
+### The import screens and the phone page
+
+- **Add Profile** opens `AddProfileView`: a choice between **Use Your Phone** (`PhoneImportView`) and **Type It In** (the existing `ProfileEditor`). Menu on the import screen returns to the choice.
+- **`PhoneImport`** (main actor, observable) owns one `ImportServer` at a time and turns its events into `starting`, `waiting(url:expires:)`, `received(ImportedProfile)` or `ended(Problem)`. Events from a replaced server are ignored.
+- **The server runs only while the import screen is visible and the app is active.**
+  - `PhoneImportView` stops it on `onDisappear` and whenever `scenePhase` leaves `.active`.
+  - When the app is active again, it starts a fresh session (new token and key) if a code was showing.
+- **`PhoneImportView`** shows:
+  - the QR code (`QRCode`: CoreImage's generator, black on white even in dark mode)
+  - the address as text
+  - a countdown with units
+  - Cancel and Type It In Instead
+  - "Trouble connecting?" help
+
+  A received profile goes to `ProfileReview` with its warnings and a Cancel button; nothing is saved until Save.
+- **The phone page** is `App/Import/Web/import.html`, `import.css` and `import.js`, served with `nacl.js` under the token.
+  - `import.js` reads the key from the fragment, removes it from the address bar, and offers a file picker that reads a `.conf` on the phone.
+  - It seals `{"name","config"}` with `nacl.secretbox` and shows the TV's answer.
+  - The sealing code avoids browser-only APIs, so `ImportPageScriptTests` runs the real `import.js` in JavaScriptCore and feeds its output to `ImportSession`.
+- **Local network:** `NSLocalNetworkUsageDescription` in the app's Info.plist explains the import, for when tvOS asks.
+
+Debug launch arguments: `-sampleImport choose|waiting|received|timedOut|tooMany|noNetwork` shows each screen with sample data. `-sampleImport live` runs the real server, which in the simulator listens on the Mac's own network address, so the page can be tried from a browser on the Mac or a phone on the same network.
+
 ## Targets
 
 | Target | Product | Notes |
