@@ -13,7 +13,7 @@ struct ProfileDraft: Equatable {
         case publicKey, presharedKey, endpoint, allowedIPs, keepalive
     }
 
-    static let maxNameLength = 40
+    static var maxNameLength: Int { ProfileName.maxLength }
 
     var name = "Home"
     var privateKey = ""
@@ -25,6 +25,9 @@ struct ProfileDraft: Equatable {
     var endpoint = ""
     var allowedIPs = "0.0.0.0/0, ::/0"
     var keepalive = "25"
+
+    /// The names of the other saved profiles, which this one mustn't repeat.
+    var otherNames: [String] = []
 
     /// The profile being edited, or nil for a new one.
     private(set) var profileID: UUID?
@@ -64,9 +67,7 @@ struct ProfileDraft: Equatable {
     func problem(in field: Field) -> String? {
         switch field {
         case .name:
-            let name = trimmed(name)
-            if name.isEmpty { return "Enter a name, such as Home." }
-            if name.count > Self.maxNameLength { return "Use a name of \(Self.maxNameLength) characters or fewer." }
+            return ProfileName.problem(name, otherNames: otherNames)
         case .privateKey:
             return keyProblem(privateKey, saved: savedPrivateKey != nil, missing: "Enter the private key from your config's [Interface] section.")
         case .address:

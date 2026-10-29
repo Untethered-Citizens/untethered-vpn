@@ -27,6 +27,7 @@ struct PhoneImportView: View {
                                   warnings: imported.warnings,
                                   cancelTitle: "Cancel",
                                   cancel: done,
+                                  canRename: true,
                                   done: done)
                 }
             case .ended(let problem):

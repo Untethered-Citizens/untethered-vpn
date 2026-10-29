@@ -7,6 +7,7 @@ struct ProfileCard: View {
     let stats: LiveStats?
     let toggle: (TunnelManager.Entry) -> Void
     let details: (TunnelManager.Entry) -> Void
+    let rename: (TunnelManager.Entry) -> Void
     let edit: (TunnelManager.Entry) -> Void
     let delete: (TunnelManager.Entry) -> Void
 
@@ -39,6 +40,7 @@ struct ProfileCard: View {
                 .disabled(entry.status == .disconnecting)
                 .contextMenu {
                     Button("Details", systemImage: "info.circle") { details(entry) }
+                    Button("Rename", systemImage: "character.cursor.ibeam") { rename(entry) }
                     Button("Edit Profile", systemImage: "pencil") { edit(entry) }
                     Button("Delete Profile", systemImage: "trash", role: .destructive) { delete(entry) }
                 }

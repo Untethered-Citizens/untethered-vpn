@@ -114,9 +114,9 @@ struct ImportSession {
         if name.isEmpty {
             return .respond(.json(.unprocessableContent, error: "Enter a name, such as Home."))
         }
-        if name.count > ProfileDraft.maxNameLength {
+        if name.count > ProfileName.maxLength {
             return .respond(.json(.unprocessableContent,
-                                  error: "Use a name of \(ProfileDraft.maxNameLength) characters or fewer."))
+                                  error: "Use a name of \(ProfileName.maxLength) characters or fewer."))
         }
         let parsed: ParsedConfig
         do {

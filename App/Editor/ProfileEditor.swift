@@ -14,6 +14,8 @@ struct ProfileEditor: View {
         self.manager = manager
         self.done = done
         self.checksAll = checksAll
+        var draft = draft
+        draft.otherNames = manager.otherNames(excluding: draft.profileID)
         _draft = State(initialValue: draft)
         _path = State(initialValue: reviewing ? [draft.makeProfile()].compactMap { $0 } : [])
     }

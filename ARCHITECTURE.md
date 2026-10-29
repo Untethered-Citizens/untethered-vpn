@@ -43,9 +43,13 @@ The Keychain tests skip themselves when the test host is built with `CODE_SIGNIN
 
 ## Home screen
 
-`App/Home/`: `HomeView` shows a large `ProfileCard` for one profile, a `ProfileList` for several, and an empty state for none; `StatusLabel` is the coloured dot and status text, and `StatsLine` one line of stats under the connected profile. Details, Edit and Delete are a context menu (press and hold); the card also has a Details button.
+`App/Home/`: `HomeView` shows a large `ProfileCard` for one profile, a `ProfileList` for several, and an empty state for none; `StatusLabel` is the coloured dot and status text, and `StatsLine` one line of stats under the connected profile. Details, Rename, Edit and Delete are a context menu (press and hold); the card also has a Details button. With several profiles, focus starts on the connected one, else the one connected last (`TunnelManager.preferredID`; `LastUsedProfile` keeps only its ID in the App Group defaults).
 
-`App/Detail/ProfileDetail.swift` is one profile's screen: status, live stats, Connect/Disconnect, Edit and Delete (with a confirmation).
+`App/Detail/ProfileDetail.swift` is one profile's screen: status, live stats, Connect/Disconnect, Rename, Edit and Delete (with a confirmation).
+
+### Names
+
+`App/Editor/ProfileName.swift` holds the name rules for every path that names a profile: not empty, at most 40 characters, and not another profile's name (ignoring case, width and surrounding spaces). `RenameView` changes only the name: `TunnelManager.rename` updates the VPN configuration's `localizedDescription`, leaving the config and Keychain alone. Manual entry checks the name in `ProfileDraft` (the editor passes the other profiles' names); the QR import's review shows a taken name under Name, disables Save and offers Rename.
 
 ### Live stats
 
@@ -53,7 +57,7 @@ The app can't see inside the tunnel, so it asks the extension. `TunnelManager.re
 
 `HomeView` refreshes the connected profile's stats about once a second while the app is in front, into `TunnelManager.stats`, which both the home screen and Details read. `LiveStats` (`App/Tunnel/`) adds when the tunnel came up, measures ages, and flags silence: no handshake for over 3 minutes (`LiveStats.staleAfter`), counted from connecting if there's never been one. `StatsFormat` writes durations, byte counts (powers of 1,000) and the endpoint with its resolved address.
 
-The simulator can't run tunnels, so Debug builds take two launch arguments for checking layouts: `-sampleProfiles one|several|failed|empty` fills the screen with sample entries (connecting one pretends to succeed; nothing touches the system or the Keychain), `-sampleStats live|stale|never` sets what a connected sample reports, `-sampleDetail YES` opens Details for the connected sample, and `-appearance light|dark` forces the appearance, which the tvOS simulator can't switch from the command line:
+The simulator can't run tunnels, so Debug builds take two launch arguments for checking layouts: `-sampleProfiles one|several|failed|empty` fills the screen with sample entries (connecting one pretends to succeed; nothing touches the system or the Keychain), `-sampleStats live|stale|never` sets what a connected sample reports, `-sampleDetail YES` opens Details for the connected sample, `-sampleRename <name>` opens Rename with that name typed in, and `-appearance light|dark` forces the appearance, which the tvOS simulator can't switch from the command line:
 
 ```sh
 xcrun simctl launch <simulator id> com.untetheredcitizens.vpn -sampleProfiles several -appearance light
