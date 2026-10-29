@@ -109,7 +109,7 @@ enum TunnelLogText {
     static let unavailable = "This build can't keep a log: its App Group is missing. Rebuild it from Config.xcconfig as described in the README."
 
     static func qrHint(_ count: Int) -> String {
-        "Scan with your phone's camera to copy the newest \(count) \(count == 1 ? "line" : "lines"), for example into a bug report."
+        "Holds the newest \(count) \(count == 1 ? "line" : "lines"). Scan with your iPhone's camera, then tap the small copy button beside the banner. Tapping the banner itself searches the web for the text."
     }
 
     /// At most this many bytes (about 25 typical lines), so the code still
