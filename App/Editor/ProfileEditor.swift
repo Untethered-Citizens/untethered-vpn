@@ -36,6 +36,20 @@ struct EditorRequest: Identifiable {
     var checksAll = false
 }
 
+extension EditorRequest {
+    /// Editing a saved profile. Throws if its config can't be read back.
+    @MainActor
+    init(editing entry: TunnelManager.Entry, manager: TunnelManager) throws {
+        let profile = TunnelProfile(id: entry.id, name: entry.name, config: try manager.config(for: entry.id))
+        self.init(draft: ProfileDraft(editing: profile))
+    }
+
+    /// What to say when `init(editing:manager:)` fails.
+    static func failureMessage(for entry: TunnelManager.Entry) -> String {
+        "“\(entry.name)” couldn't be opened for editing. Delete it and add it again."
+    }
+}
+
 #if DEBUG
 extension EditorRequest {
 

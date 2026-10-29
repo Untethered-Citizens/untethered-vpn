@@ -1,0 +1,177 @@
+import SwiftUI
+
+/// One profile's screen: its status and live stats, Connect/Disconnect, and
+/// Edit and Delete. Opened with Details from the home screen.
+struct ProfileDetail: View {
+    let manager: TunnelManager
+    let id: UUID
+    let done: () -> Void
+
+    @State private var confirmingDelete = false
+    @State private var editor: EditorRequest?
+    @State private var errorMessage: String?
+
+    var body: some View {
+        Group {
+            if let entry {
+                content(entry)
+            }
+        }
+        // tvOS draws the editor over this screen without a background of its own
+        .opacity(editor == nil ? 1 : 0)
+        .padding(80)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .onExitCommand(perform: done)
+        .onChange(of: entry == nil) { _, gone in
+            if gone { done() }
+        }
+        .fullScreenCover(item: $editor) { request in
+            ProfileEditor(manager: manager, draft: request.draft) { editor = nil }
+                .preferredColorScheme(UntetheredVPNApp.debugColorScheme)
+        }
+        .alert(
+            "Something went wrong",
+            isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(errorMessage ?? "")
+        }
+    }
+
+    private var entry: TunnelManager.Entry? {
+        manager.entries.first { $0.id == id }
+    }
+
+    private func content(_ entry: TunnelManager.Entry) -> some View {
+        let stats = entry.status == .connected ? manager.stats[id] : nil
+        return VStack(alignment: .leading, spacing: 48) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(entry.name)
+                    .font(.largeTitle.bold())
+                Text("Server: \(StatsFormat.endpoint(configured: entry.serverAddress, inUse: stats?.tunnel?.endpoint))")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+            }
+
+            StatusLabel(status: entry.status)
+
+            statsSection(entry, stats)
+
+            HStack(spacing: 40) {
+                Button {
+                    toggle(entry)
+                } label: {
+                    Text(entry.status.actionTitle)
+                        .font(.title2.bold())
+                        .frame(minWidth: 400)
+                        .padding(.vertical, 12)
+                }
+                .disabled(entry.status == .disconnecting)
+
+                Button("Edit Profile", systemImage: "pencil") { edit(entry) }
+                Button("Delete Profile", systemImage: "trash", role: .destructive) { confirmingDelete = true }
+            }
+            .font(.title3)
+        }
+        .confirmationDialog(entry.deleteTitle, isPresented: $confirmingDelete, titleVisibility: .visible) {
+            Button("Delete", role: .destructive) { delete(entry) }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(TunnelManager.Entry.deleteMessage)
+        }
+    }
+
+    @ViewBuilder
+    private func statsSection(_ entry: TunnelManager.Entry, _ stats: LiveStats?) -> some View {
+        if let stats, let tunnel = stats.tunnel {
+            VStack(alignment: .leading, spacing: 28) {
+                Grid(alignment: .leading, horizontalSpacing: 48, verticalSpacing: 16) {
+                    if let connected = stats.connectedFor {
+                        row("Connected for", StatsFormat.duration(connected))
+                    }
+                    row("Last handshake", stats.handshakeAge.map { "\(StatsFormat.duration($0)) ago" } ?? "Never")
+                    row("Received", StatsFormat.bytes(tunnel.receivedBytes))
+                    row("Sent", StatsFormat.bytes(tunnel.sentBytes))
+                }
+                .font(.title3)
+
+                if let silence = stats.silence {
+                    HStack(alignment: .firstTextBaseline, spacing: 16) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                            .accessibilityHidden(true)
+                        // Orange text is hard to read on the light background; the icon carries the colour
+                        Text(silence.message)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .font(.title3)
+                    .frame(maxWidth: 1300, alignment: .leading)
+                }
+            }
+        } else if entry.status == .connected {
+            Text("Getting the connection's stats…")
+                .font(.title3)
+                .foregroundStyle(.secondary)
+        } else {
+            Text("While this profile is connected, its stats appear here: when it last heard from the server, and how much data has gone each way.")
+                .font(.title3)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: 1300, alignment: .leading)
+        }
+    }
+
+    private func row(_ label: String, _ value: String) -> some View {
+        GridRow {
+            Text(label)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .bold()
+                .monospacedDigit()
+        }
+    }
+
+    private func toggle(_ entry: TunnelManager.Entry) {
+        Task {
+            do {
+                try await manager.toggle(entry)
+            } catch {
+                errorMessage = TunnelManager.Entry.connectFailureMessage(entry, error)
+            }
+        }
+    }
+
+    private func edit(_ entry: TunnelManager.Entry) {
+        do {
+            editor = try EditorRequest(editing: entry, manager: manager)
+        } catch {
+            errorMessage = EditorRequest.failureMessage(for: entry)
+        }
+    }
+
+    private func delete(_ entry: TunnelManager.Entry) {
+        Task {
+            do {
+                try await manager.delete(entry.id)
+            } catch {
+                errorMessage = "“\(entry.name)” couldn't be deleted. \(error.localizedDescription)"
+            }
+        }
+    }
+}
+
+/// A request to open a profile's detail screen, for `fullScreenCover(item:)`.
+struct DetailRequest: Identifiable {
+    let id: UUID
+}
+
+extension TunnelManager.Entry {
+    static func connectFailureMessage(_ entry: Self, _ error: any Error) -> String {
+        "“\(entry.name)” couldn't start. \(error.localizedDescription)"
+    }
+
+    var deleteTitle: String { "Delete “\(name)”?" }
+
+    static let deleteMessage =
+        "Its settings and keys are removed from this Apple TV. To use it again, you'll need to add the config again."
+}

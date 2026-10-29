@@ -21,6 +21,8 @@ final class TunnelManager {
     }
 
     private(set) var entries: [Entry] = []
+    /// The latest stats of each connected profile that's been asked for.
+    private(set) var stats: [UUID: LiveStats] = [:]
 
     @ObservationIgnored private let configuration: AppConfiguration
     @ObservationIgnored private let keychain: ConfigKeychain
@@ -31,6 +33,8 @@ final class TunnelManager {
     /// Sample entries for checking layouts in the simulator, which can't run tunnels.
     @ObservationIgnored private var usesSamples = false
     @ObservationIgnored private var sampleConfigs: [UUID: WireGuardConfig] = [:]
+    @ObservationIgnored private var sampleConnectedAt: [UUID: Date] = [:]
+    @ObservationIgnored private var sampleStats = SampleStats.live
     #endif
 
     init(configuration: AppConfiguration) {
@@ -147,6 +151,38 @@ final class TunnelManager {
         managers[id]?.connection.stopVPNTunnel()
     }
 
+    /// Disconnects a profile that's up or on its way up, and connects one
+    /// that isn't. Does nothing while it's disconnecting.
+    func toggle(_ entry: Entry) async throws {
+        if entry.status.isActive {
+            disconnect(entry.id)
+        } else if entry.status != .disconnecting {
+            try await connect(entry.id)
+        }
+    }
+
+    /// Asks a connected profile's extension for its stats and stores them
+    /// in `stats`. Called about once a second while a screen shows them.
+    func refreshStats(_ id: UUID) async {
+        #if DEBUG
+        if usesSamples { sampleRefreshStats(id); return }
+        #endif
+        guard let manager = managers[id], let session = manager.connection as? NETunnelProviderSession,
+              TunnelStatus(session.status) == .connected else { return }
+        let connectedSince = session.connectedDate
+        let reply: Data? = await withCheckedContinuation { continuation in
+            do {
+                try session.sendProviderMessage(TunnelStats.request) { continuation.resume(returning: $0) }
+            } catch {
+                continuation.resume(returning: nil)
+            }
+        }
+        let tunnel = reply.flatMap { try? JSONDecoder().decode(TunnelStats.self, from: $0) }
+        // The tunnel may have gone down while waiting
+        guard entries.first(where: { $0.id == id })?.status == .connected else { return }
+        stats[id] = LiveStats(connectedSince: connectedSince, tunnel: tunnel, fetchedAt: .now)
+    }
+
     private func connectionChanged(_ connectionID: ObjectIdentifier, status: NEVPNStatus) {
         guard let id = managers.first(where: { ObjectIdentifier($0.value.connection) == connectionID })?.key else { return }
         var newStatus = TunnelStatus(status)
@@ -160,6 +196,7 @@ final class TunnelManager {
     private func setStatus(_ status: TunnelStatus, for id: UUID) {
         guard let index = entries.firstIndex(where: { $0.id == id }) else { return }
         entries[index].status = status
+        if status != .connected { stats[id] = nil }
     }
 }
 
@@ -172,10 +209,21 @@ extension TunnelManager {
         case one, several, failed, empty
     }
 
+    /// What connected samples report, from `-sampleStats live|stale|never`.
+    enum SampleStats: String {
+        /// Handshakes every 2 minutes and steady traffic.
+        case live
+        /// The last handshake was over 4 minutes ago.
+        case stale
+        /// Connected 5 minutes, no handshake yet.
+        case never
+    }
+
     /// Replaces the real profiles with sample entries. Connecting a sample
     /// pretends to succeed; nothing touches the system or the Keychain.
-    func showSamples(_ samples: Samples) {
+    func showSamples(_ samples: Samples, stats: SampleStats = .live) {
         usesSamples = true
+        sampleStats = stats
         func entry(_ name: String, _ server: String, _ status: TunnelStatus) -> Entry {
             Entry(id: UUID(), name: name, serverAddress: server, status: status)
         }
@@ -188,6 +236,9 @@ extension TunnelManager {
         ]
         case .failed: [entry("Home", "vpn.example.com:51820", .failed(TunnelFailure.endpointUnresolved.message))]
         case .empty: []
+        }
+        for entry in entries where entry.status == .connected {
+            sampleConnectedAt[entry.id] = .now.addingTimeInterval(-4_330)
         }
     }
 
@@ -208,7 +259,30 @@ extension TunnelManager {
         for entry in entries where entry.id != id && entry.status.isActive {
             setStatus(.disconnected, for: entry.id)
         }
+        sampleConnectedAt[id] = .now
         setStatus(.connected, for: id)
+    }
+
+    /// Made-up stats that grow with the time since the sample connected.
+    private func sampleRefreshStats(_ id: UUID) {
+        guard let connectedAt = sampleConnectedAt[id],
+              entries.first(where: { $0.id == id })?.status == .connected else { return }
+        let now = Date.now
+        var connectedSince = connectedAt
+        let elapsed = now.timeIntervalSince(connectedAt)
+        let handshake: Date? = switch sampleStats {
+        case .live: now.addingTimeInterval(-elapsed.truncatingRemainder(dividingBy: 120))
+        case .stale: now.addingTimeInterval(-250)
+        case .never: nil
+        }
+        if sampleStats == .never { connectedSince = now.addingTimeInterval(-300) }
+        let peer = TunnelStats.Peer(
+            endpoint: "203.0.113.5:51820",
+            lastHandshake: handshake,
+            receivedBytes: sampleStats == .never ? 0 : UInt64(elapsed * 330_000),
+            sentBytes: UInt64(elapsed * 8_400)
+        )
+        stats[id] = LiveStats(connectedSince: connectedSince, tunnel: TunnelStats(peers: [peer]), fetchedAt: now)
     }
 }
 #endif
