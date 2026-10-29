@@ -32,30 +32,29 @@ struct ProfileForm: View {
                     .foregroundStyle(.secondary)
 
                 section("Profile") {
-                    row(.name, "Name", prompt: "Home", hint: "Shown on the home screen.")
+                    row(.name, "Name", hint: "Shown on the home screen.")
                 }
 
                 section("This Apple TV  ·  [Interface]") {
-                    row(.privateKey, "Private Key", prompt: draft.savedPrivateKey == nil ? "44 characters ending in =" : "Saved. Leave blank to keep it.",
-                        hint: "Shown as dots once entered.", secure: true)
-                    row(.address, "Address", prompt: "10.8.0.2/32", hint: "This Apple TV's address in the tunnel.")
-                    row(.dns, "DNS (optional)", prompt: "192.0.2.53", hint: "Name servers to use while connected, separated by commas.")
-                    row(.mtu, "MTU (optional)", prompt: "Automatic", hint: "Leave blank unless your config sets it.", numeric: true)
+                    row(.privateKey, "Private Key", keySaved: draft.savedPrivateKey != nil,
+                        hint: "44 characters ending in =. Shown as dots once entered.", secure: true)
+                    row(.address, "Address", hint: "This Apple TV's address in the tunnel.")
+                    row(.dns, "DNS (optional)", hint: "Name servers to use while connected, separated by commas.")
+                    row(.mtu, "MTU (optional)", hint: "Leave blank unless your config sets it.", numeric: true)
                 }
 
                 section("Your Server  ·  [Peer]") {
-                    row(.publicKey, "Public Key", prompt: "44 characters ending in =", hint: "The server's public key.")
-                    row(.presharedKey, "Preshared Key (optional)",
-                        prompt: draft.savedPresharedKey == nil ? "Only if your config has one" : "Saved. Leave blank to keep it.",
-                        hint: "Shown as dots once entered.", secure: true)
+                    row(.publicKey, "Public Key", hint: "The server's public key: 44 characters ending in =.")
+                    row(.presharedKey, "Preshared Key (optional)", keySaved: draft.savedPresharedKey != nil,
+                        hint: "Only if your config has one. Shown as dots once entered.", secure: true)
                     if draft.isEditing, draft.savedPresharedKey != nil {
                         Button("Remove Saved Preshared Key", role: .destructive) {
                             draft.savedPresharedKey = nil
                         }
                     }
-                    row(.endpoint, "Endpoint", prompt: "vpn.example.com:51820", hint: "The server's public address and port.")
-                    row(.allowedIPs, "AllowedIPs", prompt: "0.0.0.0/0, ::/0", hint: "0.0.0.0/0, ::/0 sends all traffic through your server.")
-                    row(.keepalive, "Persistent Keepalive (optional)", prompt: "Off",
+                    row(.endpoint, "Endpoint", hint: "The server's public address and port.")
+                    row(.allowedIPs, "AllowedIPs", hint: "0.0.0.0/0, ::/0 sends all traffic through your server.")
+                    row(.keepalive, "Persistent Keepalive (optional)",
                         hint: "Seconds between keepalive packets. 25 keeps the connection open through hotel routers.", numeric: true)
                 }
 
@@ -107,7 +106,8 @@ struct ProfileForm: View {
         }
     }
 
-    private func row(_ field: Field, _ title: String, prompt: String, hint: String, secure: Bool = false, numeric: Bool = false) -> some View {
+    private func row(_ field: Field, _ title: String, keySaved: Bool = false, hint: String, secure: Bool = false, numeric: Bool = false) -> some View {
+        let prompt = ProfileDraft.prompt(for: field, keySaved: keySaved)
         let text = Binding {
             draft[keyPath: Self.keyPath(field)]
         } set: {
