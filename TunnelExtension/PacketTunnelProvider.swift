@@ -49,6 +49,20 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         }
     }
 
+    /// Answers the app's stats request. wireguard-go's runtime state includes
+    /// the private key, so only the fields `TunnelStats` reads leave here; the
+    /// raw text is never logged or returned.
+    override func handleAppMessage(_ messageData: Data, completionHandler: ((Data?) -> Void)?) {
+        guard messageData == TunnelStats.request else {
+            completionHandler?(nil)
+            return
+        }
+        adapter.getRuntimeConfiguration { text in
+            let reply = text.flatMap { try? JSONEncoder().encode(TunnelStats(runtimeConfiguration: $0)) }
+            completionHandler?(reply)
+        }
+    }
+
     private struct LoadError: Error {
         let failure: TunnelFailure
         let profileID: UUID?

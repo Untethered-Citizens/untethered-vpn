@@ -10,6 +10,7 @@ struct HomeView: View {
     @State private var errorMessage: String?
     @State private var editor: EditorRequest?
     @State private var adding: AddRequest?
+    @State private var detail: DetailRequest?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 56) {
@@ -27,17 +28,31 @@ struct HomeView: View {
             case 0:
                 emptyState
             case 1:
-                ProfileCard(entry: manager.entries[0], toggle: toggle, edit: edit, delete: { pendingDelete = $0 })
+                ProfileCard(entry: manager.entries[0], stats: manager.stats[manager.entries[0].id],
+                            toggle: toggle, details: showDetails, edit: edit, delete: { pendingDelete = $0 })
             default:
-                ProfileList(entries: manager.entries, toggle: toggle, edit: edit, delete: { pendingDelete = $0 })
+                ProfileList(entries: manager.entries, stats: manager.stats,
+                            toggle: toggle, details: showDetails, edit: edit, delete: { pendingDelete = $0 })
             }
         }
         // tvOS draws the editor over the home screen without a background of its own
-        .opacity(editor == nil && adding == nil ? 1 : 0)
+        .opacity(editor == nil && adding == nil && detail == nil ? 1 : 0)
         .padding(80)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .task(id: scenePhase) {
             if scenePhase == .active { await reload() }
+        }
+        // Stats for the connected profile, about once a second while the app is in front
+        .task(id: scenePhase == .active ? connectedID : nil) {
+            guard let id = connectedID, scenePhase == .active else { return }
+            while !Task.isCancelled {
+                await manager.refreshStats(id)
+                try? await Task.sleep(for: .seconds(1))
+            }
+        }
+        .fullScreenCover(item: $detail) { request in
+            ProfileDetail(manager: manager, id: request.id) { detail = nil }
+                .preferredColorScheme(UntetheredVPNApp.debugColorScheme)
         }
         .fullScreenCover(item: $editor) { request in
             ProfileEditor(manager: manager, draft: request.draft, reviewing: request.reviewing, checksAll: request.checksAll) {
@@ -54,10 +69,16 @@ struct HomeView: View {
         .task {
             editor = EditorRequest.debugSample()
             adding = AddRequest.debugSample()
+            // Launch with `-sampleDetail YES` to open Details for the connected
+            // profile, or the first one if none is connected
+            if UserDefaults.standard.bool(forKey: "sampleDetail"),
+               let entry = manager.entries.first(where: { $0.status == .connected }) ?? manager.entries.first {
+                detail = DetailRequest(id: entry.id)
+            }
         }
         #endif
         .confirmationDialog(
-            "Delete “\(pendingDelete?.name ?? "")”?",
+            pendingDelete?.deleteTitle ?? "",
             isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }),
             titleVisibility: .visible,
             presenting: pendingDelete
@@ -65,7 +86,7 @@ struct HomeView: View {
             Button("Delete", role: .destructive) { delete(entry) }
             Button("Cancel", role: .cancel) {}
         } message: { _ in
-            Text("Its settings and keys are removed from this Apple TV. To use it again, you'll need to add the config again.")
+            Text(TunnelManager.Entry.deleteMessage)
         }
         .alert(
             "Something went wrong",
@@ -94,25 +115,29 @@ struct HomeView: View {
         adding = AddRequest()
     }
 
+    /// The profile whose stats to keep fresh.
+    private var connectedID: UUID? {
+        manager.entries.first { $0.status == .connected }?.id
+    }
+
+    private func showDetails(_ entry: TunnelManager.Entry) {
+        detail = DetailRequest(id: entry.id)
+    }
+
     private func edit(_ entry: TunnelManager.Entry) {
         do {
-            let profile = TunnelProfile(id: entry.id, name: entry.name, config: try manager.config(for: entry.id))
-            editor = EditorRequest(draft: ProfileDraft(editing: profile))
+            editor = try EditorRequest(editing: entry, manager: manager)
         } catch {
-            errorMessage = "“\(entry.name)” couldn't be opened for editing. Delete it and add it again."
+            errorMessage = EditorRequest.failureMessage(for: entry)
         }
     }
 
     private func toggle(_ entry: TunnelManager.Entry) {
-        if entry.status.isActive {
-            manager.disconnect(entry.id)
-        } else if entry.status != .disconnecting {
-            Task {
-                do {
-                    try await manager.connect(entry.id)
-                } catch {
-                    errorMessage = "“\(entry.name)” couldn't start. \(error.localizedDescription)"
-                }
+        Task {
+            do {
+                try await manager.toggle(entry)
+            } catch {
+                errorMessage = TunnelManager.Entry.connectFailureMessage(entry, error)
             }
         }
     }

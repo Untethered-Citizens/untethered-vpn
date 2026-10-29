@@ -43,9 +43,17 @@ The Keychain tests skip themselves when the test host is built with `CODE_SIGNIN
 
 ## Home screen
 
-`App/Home/`: `HomeView` shows a large `ProfileCard` for one profile, a `ProfileList` for several, and an empty state for none; `StatusLabel` is the coloured dot and status text. Delete is a context menu (press and hold) with a confirmation.
+`App/Home/`: `HomeView` shows a large `ProfileCard` for one profile, a `ProfileList` for several, and an empty state for none; `StatusLabel` is the coloured dot and status text, and `StatsLine` one line of stats under the connected profile. Details, Edit and Delete are a context menu (press and hold); the card also has a Details button.
 
-The simulator can't run tunnels, so Debug builds take two launch arguments for checking layouts: `-sampleProfiles one|several|failed|empty` fills the screen with sample entries (connecting one pretends to succeed; nothing touches the system or the Keychain), and `-appearance light|dark` forces the appearance, which the tvOS simulator can't switch from the command line:
+`App/Detail/ProfileDetail.swift` is one profile's screen: status, live stats, Connect/Disconnect, Edit and Delete (with a confirmation).
+
+### Live stats
+
+The app can't see inside the tunnel, so it asks the extension. `TunnelManager.refreshStats(_:)` sends the app message `TunnelStats.request`; the extension's `handleAppMessage` reads wireguard-go's runtime state (`WireGuardAdapter.getRuntimeConfiguration`) and replies with a JSON `TunnelStats`: per peer, the endpoint in use, last handshake, and bytes received and sent. **The runtime state includes the private and preshared keys**: `TunnelStats(runtimeConfiguration:)` (in `Shared/Stats/`) reads only the fields above, and the raw text is never logged or returned. `TunnelStatsTests` checks that no key reaches the reply.
+
+`HomeView` refreshes the connected profile's stats about once a second while the app is in front, into `TunnelManager.stats`, which both the home screen and Details read. `LiveStats` (`App/Tunnel/`) adds when the tunnel came up, measures ages, and flags silence: no handshake for over 3 minutes (`LiveStats.staleAfter`), counted from connecting if there's never been one. `StatsFormat` writes durations, byte counts (powers of 1,000) and the endpoint with its resolved address.
+
+The simulator can't run tunnels, so Debug builds take two launch arguments for checking layouts: `-sampleProfiles one|several|failed|empty` fills the screen with sample entries (connecting one pretends to succeed; nothing touches the system or the Keychain), `-sampleStats live|stale|never` sets what a connected sample reports, `-sampleDetail YES` opens Details for the connected sample, and `-appearance light|dark` forces the appearance, which the tvOS simulator can't switch from the command line:
 
 ```sh
 xcrun simctl launch <simulator id> com.untetheredcitizens.vpn -sampleProfiles several -appearance light

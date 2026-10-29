@@ -38,10 +38,12 @@ struct UntetheredVPNApp: App {
         guard let configuration = try? AppConfiguration.main() else { return nil }
         let manager = TunnelManager(configuration: configuration)
         #if DEBUG
-        // Launch with `-sampleProfiles one|several|failed|empty` to check layouts
+        // Launch with `-sampleProfiles one|several|failed|empty` to check layouts,
+        // and `-sampleStats live|stale|never` for what connected samples report
         if let name = UserDefaults.standard.string(forKey: "sampleProfiles"),
            let samples = TunnelManager.Samples(rawValue: name) {
-            manager.showSamples(samples)
+            let stats = UserDefaults.standard.string(forKey: "sampleStats").flatMap(TunnelManager.SampleStats.init)
+            manager.showSamples(samples, stats: stats ?? .live)
         }
         #endif
         return manager
