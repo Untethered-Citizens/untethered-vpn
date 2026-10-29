@@ -26,6 +26,9 @@ struct ProfileCard: View {
                 if entry.status == .connected {
                     StatsLine(stats: stats)
                 }
+                if entry.connectsAutomatically {
+                    AutoConnectMarker()
+                }
             }
 
             HStack(spacing: 40) {

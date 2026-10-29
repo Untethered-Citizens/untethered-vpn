@@ -18,6 +18,8 @@ final class TunnelManager {
         var name: String
         var serverAddress: String
         var status: TunnelStatus
+        /// Connect Automatically is on (on-demand rules, D36).
+        var connectsAutomatically = false
     }
 
     private(set) var entries: [Entry] = []
@@ -69,7 +71,8 @@ final class TunnelManager {
                 id: info.profileID,
                 name: manager.localizedDescription ?? "",
                 serverAddress: info.serverAddress,
-                status: TunnelStatus(manager.connection.status)
+                status: TunnelStatus(manager.connection.status),
+                connectsAutomatically: manager.isOnDemandEnabled
             ))
         }
         self.managers = managers
@@ -155,13 +158,18 @@ final class TunnelManager {
         try await load()
     }
 
-    /// Connects a profile, disconnecting any other first.
-    func connect(_ id: UUID) async throws {
+    /// Connects a profile, disconnecting any other first. Another profile
+    /// with Connect Automatically on loses it (only one can have it), and
+    /// that's returned so the screen can say so.
+    @discardableResult
+    func connect(_ id: UUID) async throws -> [AutoConnect.TurnedOff] {
         #if DEBUG
-        if usesSamples { sampleConnect(id); return }
+        if usesSamples { return sampleConnect(id) }
         #endif
         lastUsed.remember(id)
-        guard let manager = managers[id] else { return }
+        guard let manager = managers[id] else { return [] }
+        // Before stopping the others, or on-demand would bring them straight back
+        let turnedOff = try await turnOffAutoConnect(except: id)
         for (otherID, other) in managers where otherID != id && TunnelStatus(other.connection.status).isActive {
             other.connection.stopVPNTunnel()
         }
@@ -179,24 +187,89 @@ final class TunnelManager {
             setStatus(.failed(error.localizedDescription), for: id)
             throw error
         }
+        return turnedOff
     }
 
-    /// Disconnects a profile.
-    func disconnect(_ id: UUID) {
+    /// Disconnects a profile. If it had Connect Automatically on, that goes
+    /// off first, or tvOS would reconnect it within seconds; returned so the
+    /// screen can say so.
+    @discardableResult
+    func disconnect(_ id: UUID) async throws -> AutoConnect.TurnedOff? {
         #if DEBUG
-        if usesSamples { setStatus(.disconnected, for: id); return }
+        if usesSamples { return sampleDisconnect(id) }
         #endif
-        managers[id]?.connection.stopVPNTunnel()
+        guard let manager = managers[id] else { return nil }
+        var turnedOff: AutoConnect.TurnedOff?
+        if manager.isOnDemandEnabled {
+            manager.isOnDemandEnabled = false
+            try await manager.saveToPreferences()
+            setAutomatic(false, for: id)
+            turnedOff = .disconnected(manager.localizedDescription ?? "")
+            log.info("Connect Automatically off: disconnected by hand")
+        }
+        manager.connection.stopVPNTunnel()
+        return turnedOff
     }
 
     /// Disconnects a profile that's up or on its way up, and connects one
-    /// that isn't. Does nothing while it's disconnecting.
-    func toggle(_ entry: Entry) async throws {
+    /// that isn't. Does nothing while it's disconnecting. Returns what that
+    /// did to Connect Automatically, if anything.
+    func toggle(_ entry: Entry) async throws -> [AutoConnect.TurnedOff] {
         if entry.status.isActive {
-            disconnect(entry.id)
+            return try await disconnect(entry.id).map { [$0] } ?? []
         } else if entry.status != .disconnecting {
-            try await connect(entry.id)
+            return try await connect(entry.id)
         }
+        return []
+    }
+
+    /// Turns Connect Automatically on or off for a profile. Turning it on
+    /// turns it off for any other profile and connects this one now.
+    @discardableResult
+    func setConnectsAutomatically(_ id: UUID, _ isOn: Bool) async throws -> [AutoConnect.TurnedOff] {
+        #if DEBUG
+        if usesSamples { return sampleSetAutomatic(id, isOn) }
+        #endif
+        guard let manager = managers[id] else { return [] }
+        guard isOn else {
+            manager.isOnDemandEnabled = false
+            try await manager.saveToPreferences()
+            setAutomatic(false, for: id)
+            log.info("Connect Automatically off")
+            return []
+        }
+        let turnedOff = try await turnOffAutoConnect(except: id)
+        manager.isEnabled = true
+        manager.onDemandRules = AutoConnect.rules()
+        manager.isOnDemandEnabled = true
+        try await manager.saveToPreferences()
+        try await manager.loadFromPreferences()
+        setAutomatic(true, for: id)
+        log.info("Connect Automatically on")
+        if !TunnelStatus(manager.connection.status).isActive {
+            try await connect(id)
+        }
+        return turnedOff
+    }
+
+    /// Turns Connect Automatically off for every profile but `id`.
+    private func turnOffAutoConnect(except id: UUID) async throws -> [AutoConnect.TurnedOff] {
+        let automatic = managers.filter { $0.value.isOnDemandEnabled }.map(\.key)
+        var turnedOff: [AutoConnect.TurnedOff] = []
+        for otherID in AutoConnect.othersToTurnOff(for: id, automatic: automatic) {
+            guard let other = managers[otherID] else { continue }
+            other.isOnDemandEnabled = false
+            try await other.saveToPreferences()
+            setAutomatic(false, for: otherID)
+            turnedOff.append(.replaced(other.localizedDescription ?? ""))
+            log.info("Connect Automatically off: replaced by another profile")
+        }
+        return turnedOff
+    }
+
+    private func setAutomatic(_ isOn: Bool, for id: UUID) {
+        guard let index = entries.firstIndex(where: { $0.id == id }) else { return }
+        entries[index].connectsAutomatically = isOn
     }
 
     /// Asks a connected profile's extension for its stats and stores them
@@ -278,6 +351,10 @@ extension TunnelManager {
         for entry in entries where entry.status == .connected {
             sampleConnectedAt[entry.id] = .now.addingTimeInterval(-4_330)
         }
+        // Home connects automatically in the several-profile sample
+        if samples == .several, let index = entries.firstIndex(where: { $0.name == "Home" }) {
+            entries[index].connectsAutomatically = true
+        }
     }
 
     /// Saving a sample keeps it in memory only.
@@ -293,12 +370,38 @@ extension TunnelManager {
         }
     }
 
-    private func sampleConnect(_ id: UUID) {
+    private func sampleConnect(_ id: UUID) -> [AutoConnect.TurnedOff] {
+        let turnedOff = sampleTurnOffAutomatic(except: id)
         for entry in entries where entry.id != id && entry.status.isActive {
             setStatus(.disconnected, for: entry.id)
         }
         sampleConnectedAt[id] = .now
         setStatus(.connected, for: id)
+        return turnedOff
+    }
+
+    private func sampleDisconnect(_ id: UUID) -> AutoConnect.TurnedOff? {
+        guard let entry = entries.first(where: { $0.id == id }) else { return nil }
+        setStatus(.disconnected, for: id)
+        guard entry.connectsAutomatically else { return nil }
+        setAutomatic(false, for: id)
+        return .disconnected(entry.name)
+    }
+
+    private func sampleSetAutomatic(_ id: UUID, _ isOn: Bool) -> [AutoConnect.TurnedOff] {
+        guard isOn else { setAutomatic(false, for: id); return [] }
+        let turnedOff = sampleTurnOffAutomatic(except: id)
+        setAutomatic(true, for: id)
+        if entries.first(where: { $0.id == id })?.status.isActive == false { _ = sampleConnect(id) }
+        return turnedOff
+    }
+
+    private func sampleTurnOffAutomatic(except id: UUID) -> [AutoConnect.TurnedOff] {
+        let automatic = entries.filter(\.connectsAutomatically).map(\.id)
+        return AutoConnect.othersToTurnOff(for: id, automatic: automatic).compactMap { otherID in
+            setAutomatic(false, for: otherID)
+            return entries.first { $0.id == otherID }.map { .replaced($0.name) }
+        }
     }
 
     private func sampleRename(_ id: UUID, to name: String) {

@@ -11,6 +11,7 @@ struct ProfileDetail: View {
     @State private var editor: EditorRequest?
     @State private var renaming: RenameRequest?
     @State private var errorMessage: String?
+    @State private var autoConnectNotes: [AutoConnect.TurnedOff] = []
 
     var body: some View {
         Group {
@@ -35,6 +36,7 @@ struct ProfileDetail: View {
             ProfileEditor(manager: manager, draft: request.draft) { editor = nil }
                 .preferredColorScheme(UntetheredVPNApp.debugColorScheme)
         }
+        .autoConnectNotes($autoConnectNotes)
         .alert(
             "Something went wrong",
             isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
@@ -63,6 +65,8 @@ struct ProfileDetail: View {
             StatusLabel(status: entry.status)
 
             statsSection(entry, stats)
+
+            autoConnectSection(entry)
 
             HStack(spacing: 40) {
                 Button {
@@ -130,6 +134,31 @@ struct ProfileDetail: View {
         }
     }
 
+    private func autoConnectSection(_ entry: TunnelManager.Entry) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Toggle(isOn: Binding(get: { entry.connectsAutomatically }, set: { setAutomatic(entry, $0) })) {
+                Label("Connect Automatically", systemImage: "arrow.triangle.2.circlepath")
+                    .font(.title3)
+            }
+            .frame(maxWidth: 900)
+            Text("When on, this Apple TV connects to this profile by itself: at startup, after sleep and when the network changes, without opening the app. One profile at a time.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: 1300, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func setAutomatic(_ entry: TunnelManager.Entry, _ isOn: Bool) {
+        Task {
+            do {
+                autoConnectNotes = try await manager.setConnectsAutomatically(entry.id, isOn)
+            } catch {
+                errorMessage = "Connect Automatically couldn't be changed for “\(entry.name)”. \(error.localizedDescription)"
+            }
+        }
+    }
+
     private func row(_ label: String, _ value: String) -> some View {
         GridRow {
             Text(label)
@@ -143,7 +172,7 @@ struct ProfileDetail: View {
     private func toggle(_ entry: TunnelManager.Entry) {
         Task {
             do {
-                try await manager.toggle(entry)
+                autoConnectNotes = try await manager.toggle(entry)
             } catch {
                 errorMessage = TunnelManager.Entry.connectFailureMessage(entry, error)
             }
