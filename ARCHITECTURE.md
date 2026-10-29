@@ -45,7 +45,13 @@ The Keychain tests skip themselves when the test host is built with `CODE_SIGNIN
 
 `App/Home/`: `HomeView` shows a large `ProfileCard` for one profile, a `ProfileList` for several, and an empty state for none; `StatusLabel` is the coloured dot and status text, and `StatsLine` one line of stats under the connected profile. Details, Rename, Edit and Delete are a context menu (press and hold); the card also has a Details button. With several profiles, focus starts on the connected one, else the one connected last (`TunnelManager.preferredID`; `LastUsedProfile` keeps only its ID in the App Group defaults).
 
-`App/Detail/ProfileDetail.swift` is one profile's screen: status, live stats, Connect/Disconnect, Rename, Edit and Delete (with a confirmation).
+`App/Detail/ProfileDetail.swift` is one profile's screen: status, live stats, Connect/Disconnect, Rename, Edit, Export and Delete (with a confirmation).
+
+### Export, Settings and About
+
+`App/Detail/ProfileExport.swift` writes a profile out for troubleshooting with `WireGuardConfig.wgQuickText(maskingKeys: true, maskingEndpointHosts: true)`: private and preshared keys become `(hidden)` and each endpoint's host `hidden.example` (the port stays). `ExportView` shows the text and a QR code of the same text (`QRCodeTile`), so a phone camera can copy it; nothing goes over the network. `ProfileExportTests` decodes the QR code and checks no key or host is in it.
+
+`App/Settings/`: `SettingsView` (from the home header's Settings button) holds `AboutView`: the version, the licence and trademark notices, and `THIRD_PARTY_LICENSES.md`, bundled as a resource and split into blocks by `LicenceDocument`. Every paragraph takes focus so the remote can scroll. `AboutTests` checks the bundled copy matches the repository's and contains every vendored licence text, so update the file whenever a vendored component changes.
 
 ### Connect Automatically
 
@@ -61,7 +67,7 @@ The app can't see inside the tunnel, so it asks the extension. `TunnelManager.re
 
 `HomeView` refreshes the connected profile's stats about once a second while the app is in front, into `TunnelManager.stats`, which both the home screen and Details read. `LiveStats` (`App/Tunnel/`) adds when the tunnel came up, measures ages, and flags silence: no handshake for over 3 minutes (`LiveStats.staleAfter`), counted from connecting if there's never been one. `StatsFormat` writes durations, byte counts (powers of 1,000) and the endpoint with its resolved address.
 
-The simulator can't run tunnels, so Debug builds take two launch arguments for checking layouts: `-sampleProfiles one|several|failed|empty` fills the screen with sample entries (connecting one pretends to succeed; nothing touches the system or the Keychain), `-sampleStats live|stale|never` sets what a connected sample reports, `-sampleDetail YES` opens Details for the connected sample, `-sampleRename <name>` opens Rename with that name typed in, and `-appearance light|dark` forces the appearance, which the tvOS simulator can't switch from the command line:
+The simulator can't run tunnels, so Debug builds take two launch arguments for checking layouts: `-sampleProfiles one|several|failed|empty` fills the screen with sample entries (connecting one pretends to succeed; nothing touches the system or the Keychain), `-sampleStats live|stale|never` sets what a connected sample reports, `-sampleDetail YES` opens Details for the connected sample, `-sampleExport YES` (with `-sampleDetail`) opens its Export, `-sampleSettings main|about` opens Settings or About, `-sampleRename <name>` opens Rename with that name typed in, and `-appearance light|dark` forces the appearance, which the tvOS simulator can't switch from the command line:
 
 ```sh
 xcrun simctl launch <simulator id> com.untetheredcitizens.vpn -sampleProfiles several -appearance light

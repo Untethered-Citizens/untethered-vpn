@@ -11,6 +11,7 @@
 		A10000000000000000000002 /* WireGuardKit in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000002 /* WireGuardKit */; };
 		A10000000000000000000003 /* CTweetNaCl in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000004 /* CTweetNaCl */; };
 		A10000000000000000000004 /* nacl.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* nacl.js */; };
+		A10000000000000000000005 /* THIRD_PARTY_LICENSES.md in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* THIRD_PARTY_LICENSES.md */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -62,6 +63,7 @@
 		A20000000000000000000014 /* UntetheredVPNTunnel-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "UntetheredVPNTunnel-Info.plist"; sourceTree = "<group>"; };
 		A20000000000000000000015 /* UntetheredVPNTunnel.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = UntetheredVPNTunnel.entitlements; sourceTree = "<group>"; };
 		A20000000000000000000016 /* nacl.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = nacl.js; path = Vendor/TweetNaCl/JS/nacl.js; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000017 /* THIRD_PARTY_LICENSES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = THIRD_PARTY_LICENSES.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -118,6 +120,7 @@
 			isa = PBXGroup;
 			children = (
 				A20000000000000000000011 /* Config.sample.xcconfig */,
+				A20000000000000000000017 /* THIRD_PARTY_LICENSES.md */,
 				A40000000000000000000001 /* App */,
 				A40000000000000000000002 /* TunnelExtension */,
 				A40000000000000000000003 /* Shared */,
@@ -297,6 +300,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000004 /* nacl.js in Resources */,
+				A10000000000000000000005 /* THIRD_PARTY_LICENSES.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

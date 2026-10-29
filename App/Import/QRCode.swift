@@ -1,5 +1,6 @@
 import CoreImage
 import CoreImage.CIFilterBuiltins
+import SwiftUI
 
 /// Makes the QR code the import screen shows, with CoreImage's built-in
 /// generator (no third-party code).
@@ -15,5 +16,33 @@ enum QRCode {
         guard let output = filter.outputImage else { return nil }
         let scaled = output.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
         return CIContext().createCGImage(scaled, from: scaled.extent)
+    }
+}
+
+/// A QR code drawn on its own white tile, for the import and export screens.
+struct QRCodeTile: View {
+    let text: String
+    let size: CGFloat
+    let failureText: String
+    let accessibilityLabel: String
+
+    var body: some View {
+        Group {
+            if let image = QRCode.image(for: text) {
+                Image(decorative: image, scale: 1)
+                    .interpolation(.none)
+                    .resizable()
+                    .scaledToFit()
+            } else {
+                Text(failureText)
+                    .foregroundStyle(.black)
+                    .multilineTextAlignment(.center)
+            }
+        }
+        .frame(width: size, height: size)
+        .padding(20)
+        // Scanners need dark modules on a light background, even in dark mode.
+        .background(.white, in: .rect(cornerRadius: 24))
+        .accessibilityLabel(accessibilityLabel)
     }
 }

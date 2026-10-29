@@ -57,7 +57,7 @@ struct ProfileCard: View {
                 }
             }
 
-            Text("Details shows this connection's stats, and is where you edit or delete the profile.")
+            Text("Details shows this connection's stats, and is where you rename, edit, export or delete the profile.")
                 .font(.body)
                 .foregroundStyle(.secondary)
         }
