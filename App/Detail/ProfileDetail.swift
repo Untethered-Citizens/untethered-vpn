@@ -127,10 +127,11 @@ struct ProfileDetail: View {
                 .font(.title3)
                 .foregroundStyle(.secondary)
         } else {
-            Text("While this profile is connected, its stats appear here: when it last heard from the server, and how much data has gone each way.")
+            Text("While connected, this shows the last handshake and the data sent and received.")
                 .font(.title3)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: 1300, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
