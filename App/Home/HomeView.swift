@@ -82,7 +82,7 @@ struct HomeView: View {
             .preferredColorScheme(UntetheredVPNApp.debugColorScheme)
         }
         .fullScreenCover(item: $settings) { request in
-            SettingsView(done: { settings = nil }, startsOnAbout: request.startsOnAbout)
+            SettingsView(log: manager.tunnelLog, done: { settings = nil }, startsOn: request.startsOn)
                 .preferredColorScheme(UntetheredVPNApp.debugColorScheme)
         }
         .fullScreenCover(item: $adding) { request in
@@ -99,10 +99,11 @@ struct HomeView: View {
                let entry = manager.entries.first(where: { $0.status == .connected }) ?? manager.entries.first {
                 detail = DetailRequest(id: entry.id)
             }
-            // Launch with `-sampleSettings main|about` to open Settings or About
+            // Launch with `-sampleSettings main|log|about` to open Settings, the Tunnel Log or About
             switch UserDefaults.standard.string(forKey: "sampleSettings") {
             case "main": settings = SettingsRequest()
-            case "about": settings = SettingsRequest(startsOnAbout: true)
+            case "log": settings = SettingsRequest(startsOn: .log)
+            case "about": settings = SettingsRequest(startsOn: .about)
             default: break
             }
             // Launch with `-sampleRename <name>` to open Rename for the first

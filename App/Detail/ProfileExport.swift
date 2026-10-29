@@ -19,7 +19,7 @@ struct ProfileExport: Equatable {
     static let hiddenNote =
         "Private and preshared keys are shown as \(WireGuardKey.masked), and the server's address as \(WireGuardConfig.maskedHost). The port, public keys, addresses and DNS are shown as saved."
 
-    static let qrHint = "Scan with your phone's camera to copy this text, for example into a bug report."
+    static let qrHint = "Scan with your iPhone's camera, then tap the small copy button beside the banner. Tapping the banner itself searches the web for the text."
 }
 
 /// A request to show a profile's export, for `sheet(item:)`.

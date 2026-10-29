@@ -8,16 +8,29 @@ private let log = Logger(subsystem: "com.untetheredcitizens.vpn.tunnel", categor
 /// Keychain through the persistent reference in its protocol configuration
 /// (D31) and runs it with WireGuardKit.
 ///
-/// Logs name the step and the failure, never a key or a config value.
+/// Logs name the step and the failure, never a key or a config value. The
+/// same lines, redacted, go to the Tunnel Log the app shows (`note`).
 class PacketTunnelProvider: NEPacketTunnelProvider {
 
-    private lazy var adapter = WireGuardAdapter(with: self) { level, message in
+    private let tunnelLog = (try? AppConfiguration.main()).flatMap { TunnelLog(configuration: $0, source: .tunnel) }
+
+    private lazy var adapter = WireGuardAdapter(with: self) { [tunnelLog] level, message in
         // wireguard-go's messages can include peer addresses, so keep them private
         log.log(level: level == .error ? .error : .debug, "\(message, privacy: .private)")
+        if level == .error || !RoutineMessages.isRoutine(message) {
+            tunnelLog?.add(message)
+        }
+    }
+
+    /// Adds a line to the Tunnel Log. The system log gets its own call, with
+    /// its own privacy marking.
+    private func note(_ text: String) {
+        tunnelLog?.add(text)
     }
 
     override func startTunnel(options: [String: NSObject]?, completionHandler: @escaping (Error?) -> Void) {
         log.info("Start requested")
+        note(options?["is-on-demand"] != nil ? "Start requested by Connect Automatically" : "Start requested")
         let configuration: TunnelConfiguration
         let profileID: UUID?
         do {
@@ -36,6 +49,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
                 self.fail(failure, profileID: profileID, completionHandler: completionHandler)
             } else {
                 log.info("Tunnel up")
+                self.note("Tunnel up")
                 completionHandler(nil)
             }
         }
@@ -43,8 +57,12 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
 
     override func stopTunnel(with reason: NEProviderStopReason, completionHandler: @escaping () -> Void) {
         log.info("Stop requested, reason \(reason.rawValue)")
+        note("Stop requested: \(reason.logDescription)")
         adapter.stop { error in
-            if let error { log.error("Adapter stop failed: \(String(describing: error), privacy: .public)") }
+            if let error {
+                log.error("Adapter stop failed: \(String(describing: error), privacy: .public)")
+                self.note("Adapter stop failed: \(String(describing: error))")
+            }
             completionHandler()
         }
     }
@@ -78,6 +96,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             text = try ConfigKeychain.text(persistentReference: info.keychainReference)
         } catch {
             log.error("Keychain read failed: \(error.description, privacy: .public)")
+            note("Keychain read failed: \(error.description)")
             throw LoadError(failure: .keychainUnreadable, profileID: info.profileID)
         }
         let config: WireGuardConfig
@@ -86,10 +105,13 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         } catch {
             // ConfigError messages name the section and setting, never a value
             log.error("Saved config invalid: \(error.message, privacy: .public)")
+            note("Saved config invalid: \(error.message)")
             throw LoadError(failure: .configInvalid, profileID: info.profileID)
         }
+        tunnelLog?.setHosts(config.peers.map(\.endpoint.host))
         guard let configuration = config.tunnelConfiguration(named: info.profileID.uuidString) else {
             log.error("Config conversion to WireGuardKit failed")
+            note("Config conversion to WireGuardKit failed")
             throw LoadError(failure: .configInvalid, profileID: info.profileID)
         }
         return (configuration, info.profileID)
@@ -97,10 +119,34 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
 
     private func fail(_ failure: TunnelFailure, profileID: UUID?, completionHandler: (Error?) -> Void) {
         log.error("Start failed: \(String(describing: failure), privacy: .public)")
+        note("Start failed: \(failure.message)")
         if let profileID, let configuration = try? AppConfiguration.main(),
            let defaults = UserDefaults(suiteName: configuration.appGroupID) {
             TunnelFailureRecord.save(TunnelFailureRecord(failure: failure, profileID: profileID), to: defaults)
         }
         completionHandler(failure)
+    }
+}
+
+private extension NEProviderStopReason {
+    /// Why tvOS stopped the tunnel, in words for the Tunnel Log.
+    var logDescription: String {
+        switch self {
+        case .userInitiated: "disconnected from the app"
+        case .providerFailed: "the tunnel failed"
+        case .noNetworkAvailable: "no network"
+        case .unrecoverableNetworkChange: "the network changed"
+        case .providerDisabled: "the profile was turned off"
+        case .configurationDisabled: "the configuration was turned off"
+        case .configurationRemoved: "the profile was deleted"
+        case .superceded: "another VPN started"
+        case .userLogout: "user logged out"
+        case .userSwitch: "user switched"
+        case .connectionFailed: "the connection failed"
+        case .sleep: "the Apple TV went to sleep"
+        case .appUpdate: "the app was updated"
+        case .internalError: "internal error"
+        default: "reason \(rawValue)"
+        }
     }
 }

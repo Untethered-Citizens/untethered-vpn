@@ -30,6 +30,8 @@ final class TunnelManager {
     @ObservationIgnored private let keychain: ConfigKeychain
     @ObservationIgnored private let sharedDefaults: UserDefaults?
     @ObservationIgnored private let lastUsed: LastUsedProfile
+    /// The Tunnel Log; the app adds what the user did, without profile names.
+    @ObservationIgnored private(set) var tunnelLog: TunnelLog?
     @ObservationIgnored private var managers: [UUID: NETunnelProviderManager] = [:]
     @ObservationIgnored private var statusObserver: (any NSObjectProtocol)?
     #if DEBUG
@@ -45,6 +47,7 @@ final class TunnelManager {
         keychain = ConfigKeychain(accessGroup: configuration.keychainGroup, service: configuration.tunnelBundleID)
         sharedDefaults = UserDefaults(suiteName: configuration.appGroupID)
         lastUsed = LastUsedProfile(defaults: sharedDefaults)
+        tunnelLog = TunnelLog(configuration: configuration, source: .app)
         statusObserver = NotificationCenter.default.addObserver(
             forName: .NEVPNStatusDidChange, object: nil, queue: .main
         ) { [weak self] notification in
@@ -168,6 +171,7 @@ final class TunnelManager {
         #endif
         lastUsed.remember(id)
         guard let manager = managers[id] else { return [] }
+        tunnelLog?.add("Connect")
         // Before stopping the others, or on-demand would bring them straight back
         let turnedOff = try await turnOffAutoConnect(except: id)
         for (otherID, other) in managers where otherID != id && TunnelStatus(other.connection.status).isActive {
@@ -199,6 +203,7 @@ final class TunnelManager {
         if usesSamples { return sampleDisconnect(id) }
         #endif
         guard let manager = managers[id] else { return nil }
+        tunnelLog?.add("Disconnect")
         var turnedOff: AutoConnect.TurnedOff?
         if manager.isOnDemandEnabled {
             manager.isOnDemandEnabled = false
@@ -206,6 +211,7 @@ final class TunnelManager {
             setAutomatic(false, for: id)
             turnedOff = .disconnected(manager.localizedDescription ?? "")
             log.info("Connect Automatically off: disconnected by hand")
+            tunnelLog?.add("Connect Automatically turned off by Disconnect")
         }
         manager.connection.stopVPNTunnel()
         return turnedOff
@@ -236,6 +242,7 @@ final class TunnelManager {
             try await manager.saveToPreferences()
             setAutomatic(false, for: id)
             log.info("Connect Automatically off")
+            tunnelLog?.add("Connect Automatically turned off")
             return []
         }
         let turnedOff = try await turnOffAutoConnect(except: id)
@@ -246,6 +253,7 @@ final class TunnelManager {
         try await manager.loadFromPreferences()
         setAutomatic(true, for: id)
         log.info("Connect Automatically on")
+        tunnelLog?.add("Connect Automatically turned on")
         if !TunnelStatus(manager.connection.status).isActive {
             try await connect(id)
         }
@@ -263,6 +271,7 @@ final class TunnelManager {
             setAutomatic(false, for: otherID)
             turnedOff.append(.replaced(other.localizedDescription ?? ""))
             log.info("Connect Automatically off: replaced by another profile")
+            tunnelLog?.add("Connect Automatically moved to another profile")
         }
         return turnedOff
     }
@@ -334,6 +343,7 @@ extension TunnelManager {
     /// pretends to succeed; nothing touches the system or the Keychain.
     func showSamples(_ samples: Samples, stats: SampleStats = .live) {
         usesSamples = true
+        tunnelLog = Self.sampleLog()
         sampleStats = stats
         func entry(_ name: String, _ server: String, _ status: TunnelStatus) -> Entry {
             Entry(id: UUID(), name: name, serverAddress: server, status: status)
@@ -373,6 +383,32 @@ extension TunnelManager {
         if samples == .several, let index = entries.firstIndex(where: { $0.name == "Home" }) {
             entries[index].connectsAutomatically = true
         }
+    }
+
+    /// A Tunnel Log in a temporary folder, filled with typical lines that go
+    /// through the real redactor (documentation addresses stand in for real ones).
+    private static func sampleLog() -> TunnelLog {
+        let directory = FileManager.default.temporaryDirectory.appending(path: "SampleTunnelLog-\(UUID().uuidString)")
+        let log = TunnelLog(directory: directory, defaults: nil, source: .tunnel)
+        log.setHosts(["vpn.example.com"])
+        let start = Date.now.addingTimeInterval(-3_600)
+        let lines = [
+            "Start requested by Connect Automatically",
+            "Attaching to interface",
+            "DNS64: mapped vpn.example.com to 203.0.113.5",
+            "Device started",
+            "Interface state was Down, requested Up, now Up",
+            "Tunnel up",
+            "Network change detected with satisfied route and interface order [en0]",
+            "peer(AbCd…WxYz) - Retrying handshake because we stopped hearing back after 15 seconds",
+            "Connectivity offline, pausing backend.",
+            "Connectivity online, resuming backend.",
+            "UDP bind has been updated",
+        ]
+        for (index, line) in lines.enumerated() {
+            log.add(line, date: start.addingTimeInterval(Double(index) * 120))
+        }
+        return log
     }
 
     /// Saving a sample keeps it in memory only.
