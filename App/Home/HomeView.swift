@@ -11,6 +11,7 @@ struct HomeView: View {
     @State private var editor: EditorRequest?
     @State private var adding: AddRequest?
     @State private var detail: DetailRequest?
+    @State private var renaming: RenameRequest?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 56) {
@@ -29,10 +30,10 @@ struct HomeView: View {
                 emptyState
             case 1:
                 ProfileCard(entry: manager.entries[0], stats: manager.stats[manager.entries[0].id],
-                            toggle: toggle, details: showDetails, edit: edit, delete: { pendingDelete = $0 })
+                            toggle: toggle, details: showDetails, rename: rename, edit: edit, delete: { pendingDelete = $0 })
             default:
-                ProfileList(entries: manager.entries, stats: manager.stats,
-                            toggle: toggle, details: showDetails, edit: edit, delete: { pendingDelete = $0 })
+                ProfileList(entries: manager.entries, stats: manager.stats, preferredID: manager.preferredID,
+                            toggle: toggle, details: showDetails, rename: rename, edit: edit, delete: { pendingDelete = $0 })
             }
         }
         // tvOS draws the editor over the home screen without a background of its own
@@ -49,6 +50,11 @@ struct HomeView: View {
                 await manager.refreshStats(id)
                 try? await Task.sleep(for: .seconds(1))
             }
+        }
+        .sheet(item: $renaming) { request in
+            RenameView(name: request.name, otherNames: manager.otherNames(excluding: request.id),
+                       save: { try await manager.rename(request.id, to: $0) },
+                       done: { renaming = nil })
         }
         .fullScreenCover(item: $detail) { request in
             ProfileDetail(manager: manager, id: request.id) { detail = nil }
@@ -74,6 +80,11 @@ struct HomeView: View {
             if UserDefaults.standard.bool(forKey: "sampleDetail"),
                let entry = manager.entries.first(where: { $0.status == .connected }) ?? manager.entries.first {
                 detail = DetailRequest(id: entry.id)
+            }
+            // Launch with `-sampleRename <name>` to open Rename for the first
+            // profile with that name typed in
+            if let name = UserDefaults.standard.string(forKey: "sampleRename"), let first = manager.entries.first {
+                renaming = RenameRequest(id: first.id, name: name)
             }
         }
         #endif
@@ -122,6 +133,10 @@ struct HomeView: View {
 
     private func showDetails(_ entry: TunnelManager.Entry) {
         detail = DetailRequest(id: entry.id)
+    }
+
+    private func rename(_ entry: TunnelManager.Entry) {
+        renaming = RenameRequest(id: entry.id, name: entry.name)
     }
 
     private func edit(_ entry: TunnelManager.Entry) {

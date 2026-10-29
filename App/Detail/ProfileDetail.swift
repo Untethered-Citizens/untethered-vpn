@@ -9,6 +9,7 @@ struct ProfileDetail: View {
 
     @State private var confirmingDelete = false
     @State private var editor: EditorRequest?
+    @State private var renaming: RenameRequest?
     @State private var errorMessage: String?
 
     var body: some View {
@@ -24,6 +25,11 @@ struct ProfileDetail: View {
         .onExitCommand(perform: done)
         .onChange(of: entry == nil) { _, gone in
             if gone { done() }
+        }
+        .sheet(item: $renaming) { request in
+            RenameView(name: request.name, otherNames: manager.otherNames(excluding: request.id),
+                       save: { try await manager.rename(request.id, to: $0) },
+                       done: { renaming = nil })
         }
         .fullScreenCover(item: $editor) { request in
             ProfileEditor(manager: manager, draft: request.draft) { editor = nil }
@@ -64,11 +70,14 @@ struct ProfileDetail: View {
                 } label: {
                     Text(entry.status.actionTitle)
                         .font(.title2.bold())
-                        .frame(minWidth: 400)
+                        .frame(minWidth: 340)
                         .padding(.vertical, 12)
                 }
                 .disabled(entry.status == .disconnecting)
 
+                Button("Rename", systemImage: "character.cursor.ibeam") {
+                    renaming = RenameRequest(id: entry.id, name: entry.name)
+                }
                 Button("Edit Profile", systemImage: "pencil") { edit(entry) }
                 Button("Delete Profile", systemImage: "trash", role: .destructive) { confirmingDelete = true }
             }

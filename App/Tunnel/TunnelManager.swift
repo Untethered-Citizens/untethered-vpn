@@ -27,6 +27,7 @@ final class TunnelManager {
     @ObservationIgnored private let configuration: AppConfiguration
     @ObservationIgnored private let keychain: ConfigKeychain
     @ObservationIgnored private let sharedDefaults: UserDefaults?
+    @ObservationIgnored private let lastUsed: LastUsedProfile
     @ObservationIgnored private var managers: [UUID: NETunnelProviderManager] = [:]
     @ObservationIgnored private var statusObserver: (any NSObjectProtocol)?
     #if DEBUG
@@ -41,6 +42,7 @@ final class TunnelManager {
         self.configuration = configuration
         keychain = ConfigKeychain(accessGroup: configuration.keychainGroup, service: configuration.tunnelBundleID)
         sharedDefaults = UserDefaults(suiteName: configuration.appGroupID)
+        lastUsed = LastUsedProfile(defaults: sharedDefaults)
         statusObserver = NotificationCenter.default.addObserver(
             forName: .NEVPNStatusDidChange, object: nil, queue: .main
         ) { [weak self] notification in
@@ -96,6 +98,40 @@ final class TunnelManager {
         try await load()
     }
 
+    /// Renames a profile. Only the name in the system's VPN preferences
+    /// changes; the config and keys are untouched. Throws `NameProblem` if
+    /// the name breaks the rules, e.g. another profile already has it.
+    func rename(_ id: UUID, to name: String) async throws {
+        let name = ProfileName.cleaned(name)
+        if let problem = ProfileName.problem(name, otherNames: otherNames(excluding: id)) {
+            throw NameProblem(message: problem)
+        }
+        #if DEBUG
+        if usesSamples { sampleRename(id, to: name); return }
+        #endif
+        guard let manager = managers[id] else { return }
+        manager.localizedDescription = name
+        try await manager.saveToPreferences()
+        log.info("Renamed a profile")
+        try await load()
+    }
+
+    struct NameProblem: LocalizedError {
+        let message: String
+        var errorDescription: String? { message }
+    }
+
+    /// The names of every saved profile except `id`, for the name rules.
+    func otherNames(excluding id: UUID?) -> [String] {
+        entries.filter { $0.id != id }.map(\.name)
+    }
+
+    /// Where the home screen's focus starts: the connected profile, else the
+    /// one connected last, if it still exists.
+    var preferredID: UUID? {
+        entries.first { $0.status.isActive }?.id ?? lastUsed.id(among: entries.map(\.id))
+    }
+
     /// The saved config of a profile, for editing.
     func config(for id: UUID) throws -> WireGuardConfig {
         #if DEBUG
@@ -109,6 +145,7 @@ final class TunnelManager {
         #if DEBUG
         if usesSamples { entries.removeAll { $0.id == id }; return }
         #endif
+        lastUsed.forget(id)
         if let manager = managers[id] {
             manager.connection.stopVPNTunnel()
             try await manager.removeFromPreferences()
@@ -123,6 +160,7 @@ final class TunnelManager {
         #if DEBUG
         if usesSamples { sampleConnect(id); return }
         #endif
+        lastUsed.remember(id)
         guard let manager = managers[id] else { return }
         for (otherID, other) in managers where otherID != id && TunnelStatus(other.connection.status).isActive {
             other.connection.stopVPNTunnel()
@@ -261,6 +299,12 @@ extension TunnelManager {
         }
         sampleConnectedAt[id] = .now
         setStatus(.connected, for: id)
+    }
+
+    private func sampleRename(_ id: UUID, to name: String) {
+        guard let index = entries.firstIndex(where: { $0.id == id }) else { return }
+        entries[index].name = name
+        entries.sort { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
     /// Made-up stats that grow with the time since the sample connected.

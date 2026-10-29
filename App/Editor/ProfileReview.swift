@@ -12,17 +12,27 @@ struct ProfileReview: View {
     /// "Cancel" and an action that discards the profile.
     var cancelTitle = "Back"
     var cancel: (() -> Void)?
+    /// Offers Rename here, for an import whose name came from the phone.
+    var canRename = false
     let done: () -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var isSaving = false
     @State private var errorMessage: String?
+    @State private var renamedTo: String?
+    @State private var renaming = false
+
+    private var name: String { renamedTo ?? profile.name }
+
+    private var nameProblem: String? {
+        ProfileName.problem(name, otherNames: manager.otherNames(excluding: profile.id))
+    }
 
     private static let hiddenKey = "•••••••• (hidden)"
 
     var body: some View {
         let interface = profile.config.interface
-        VStack(alignment: .leading, spacing: 48) {
+        VStack(alignment: .leading, spacing: 40) {
             Text("Check these settings against your config. Keys stay hidden.")
                 .font(.body)
                 .foregroundStyle(.secondary)
@@ -39,12 +49,12 @@ struct ProfileReview: View {
 
             HStack(alignment: .top, spacing: 80) {
                 group("This Apple TV  ·  [Interface]", rows: [
-                    ("Name", profile.name),
+                    ("Name", name),
                     ("Private Key", Self.hiddenKey),
                     ("Address", list(interface.addresses)),
                     ("DNS", list(interface.dnsServers + interface.dnsSearchDomains, empty: "None")),
                     ("MTU", interface.mtu.map(String.init) ?? "Automatic"),
-                ])
+                ], notes: nameProblem.map { ["Name": canRename ? "\($0) Select Rename to change it." : $0] } ?? [:])
                 ForEach(Array(profile.config.peers.enumerated()), id: \.offset) { index, peer in
                     group(profile.config.peers.count == 1 ? "Your Server  ·  [Peer]" : "Peer \(index + 1)  ·  [Peer]", rows: [
                         ("Public Key", peer.publicKey.base64),
@@ -56,11 +66,14 @@ struct ProfileReview: View {
                 }
             }
 
-            Text(isEditing
-                 ? "If this profile is connected, the changes apply the next time you connect."
-                 : "The first time you save a profile, tvOS asks whether Untethered VPN may add VPN configurations. Choose Allow.")
-                .font(.body)
-                .foregroundStyle(.secondary)
+            // Left out while the name blocks Save, to leave room for its note
+            if nameProblem == nil {
+                Text(isEditing
+                     ? "If this profile is connected, the changes apply the next time you connect."
+                     : "The first time you save a profile, tvOS asks whether Untethered VPN may add VPN configurations. Choose Allow.")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+            }
 
             HStack(spacing: 40) {
                 Button {
@@ -72,7 +85,11 @@ struct ProfileReview: View {
                     }
                     .frame(minWidth: 320)
                 }
-                .disabled(isSaving)
+                .disabled(isSaving || nameProblem != nil)
+                if canRename {
+                    Button("Rename", systemImage: "character.cursor.ibeam") { renaming = true }
+                        .disabled(isSaving)
+                }
                 Button(cancelTitle) {
                     if let cancel { cancel() } else { dismiss() }
                 }
@@ -81,7 +98,12 @@ struct ProfileReview: View {
         }
         .padding(.vertical, 40)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .navigationTitle("Review “\(profile.name)”")
+        .navigationTitle("Review “\(name)”")
+        .sheet(isPresented: $renaming) {
+            RenameView(name: name, otherNames: manager.otherNames(excluding: profile.id),
+                       save: { renamedTo = $0 },
+                       done: { renaming = false })
+        }
         .alert(
             "Not saved",
             isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
@@ -92,7 +114,8 @@ struct ProfileReview: View {
         }
     }
 
-    private func group(_ title: String, rows: [(String, String)]) -> some View {
+    /// A column of settings. A note shows in red under its row's value.
+    private func group(_ title: String, rows: [(String, String)], notes: [String: String] = [:]) -> some View {
         VStack(alignment: .leading, spacing: 24) {
             Text(title)
                 .font(.title3.bold())
@@ -103,6 +126,12 @@ struct ProfileReview: View {
                         .foregroundStyle(.secondary)
                     Text(value)
                         .font(.body)
+                    if let note = notes[label] {
+                        Label(note, systemImage: "exclamationmark.circle.fill")
+                            .font(.callout)
+                            .foregroundStyle(.red)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
         }
@@ -117,10 +146,10 @@ struct ProfileReview: View {
         isSaving = true
         Task {
             do {
-                try await manager.save(profile)
+                try await manager.save(TunnelProfile(id: profile.id, name: name, config: profile.config))
                 done()
             } catch {
-                errorMessage = "“\(profile.name)” couldn't be saved. \(error.localizedDescription)"
+                errorMessage = "“\(name)” couldn't be saved. \(error.localizedDescription)"
                 isSaving = false
             }
         }
