@@ -1,4 +1,7 @@
 import Foundation
+import os
+
+private let log = Logger(subsystem: "com.untetheredcitizens.vpn", category: "tunnel-log")
 
 /// The log the Tunnel Log screen shows: short lines from the app and the
 /// tunnel extension, redacted before they're written. Each process writes
@@ -37,8 +40,10 @@ final class TunnelLog: @unchecked Sendable {
     convenience init?(configuration: AppConfiguration, source: Source) {
         guard let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: configuration.appGroupID)
         else { return nil }
-        // Library/Application Support, which tvOS doesn't purge like Caches
-        let directory = container.appending(path: "Library/Application Support/TunnelLog", directoryHint: .isDirectory)
+        // tvOS lets apps write only to Caches and tmp (Application Support is
+        // refused). Caches can be purged when storage runs low, which a
+        // troubleshooting log can live with.
+        let directory = container.appending(path: "Library/Caches/TunnelLog", directoryHint: .isDirectory)
         self.init(directory: directory, defaults: UserDefaults(suiteName: configuration.appGroupID), source: source)
     }
 
@@ -107,7 +112,8 @@ final class TunnelLog: @unchecked Sendable {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             try Data(text.utf8).write(to: file(for: source), options: .atomic)
         } catch {
-            // A log that can't be written mustn't stop the tunnel; the system log still has it
+            // A log that can't be written mustn't stop the tunnel; say so in the system log
+            log.error("Tunnel Log write failed: \(error.localizedDescription, privacy: .public)")
         }
     }
 }
