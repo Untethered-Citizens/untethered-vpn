@@ -13,6 +13,25 @@ struct ProfileDraft: Equatable {
         case publicKey, presharedKey, endpoint, allowedIPs, keepalive
     }
 
+    /// Each field's placeholder. tvOS's full-screen keyboard shows only the
+    /// placeholder, so it names the setting as the config writes it and its
+    /// section, then an example. `keySaved` is for a key field when editing.
+    static func prompt(for field: Field, keySaved: Bool = false) -> String {
+        let keep = keySaved ? ". Leave blank to keep the saved one." : ""
+        return switch field {
+        case .name: "Profile name, such as Home"
+        case .privateKey: "PrivateKey from [Interface]" + keep
+        case .address: "Address from [Interface], such as 10.8.0.2/32"
+        case .dns: "DNS from [Interface] (optional), such as 192.0.2.53"
+        case .mtu: "MTU from [Interface] (optional). Blank for automatic"
+        case .publicKey: "PublicKey from [Peer]"
+        case .presharedKey: "PresharedKey from [Peer] (optional)" + keep
+        case .endpoint: "Endpoint from [Peer], such as vpn.example.com:51820"
+        case .allowedIPs: "AllowedIPs from [Peer], such as 0.0.0.0/0, ::/0"
+        case .keepalive: "PersistentKeepalive from [Peer] (optional), such as 25"
+        }
+    }
+
     static var maxNameLength: Int { ProfileName.maxLength }
 
     var name = "Home"

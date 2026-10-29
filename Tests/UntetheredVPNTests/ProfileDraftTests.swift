@@ -170,3 +170,36 @@ struct ProfileDraftTests {
         #expect(edited.config == config)
     }
 }
+
+/// tvOS's keyboard screen shows only the placeholder, so each one names
+/// the setting as the config writes it, and its section.
+struct FieldPromptTests {
+
+    @Test(arguments: [
+        (ProfileDraft.Field.privateKey, "PrivateKey", "[Interface]"),
+        (.address, "Address", "[Interface]"),
+        (.dns, "DNS", "[Interface]"),
+        (.mtu, "MTU", "[Interface]"),
+        (.publicKey, "PublicKey", "[Peer]"),
+        (.presharedKey, "PresharedKey", "[Peer]"),
+        (.endpoint, "Endpoint", "[Peer]"),
+        (.allowedIPs, "AllowedIPs", "[Peer]"),
+        (.keepalive, "PersistentKeepalive", "[Peer]"),
+    ])
+    func namesTheSettingAndSection(field: ProfileDraft.Field, setting: String, section: String) {
+        #expect(ProfileDraft.prompt(for: field).hasPrefix("\(setting) from \(section)"))
+    }
+
+    @Test func everyFieldHasItsOwnPrompt() {
+        let prompts = ProfileDraft.Field.allCases.map { ProfileDraft.prompt(for: $0) }
+        #expect(Set(prompts).count == prompts.count)
+        #expect(ProfileDraft.prompt(for: .name).contains("Profile name"))
+    }
+
+    @Test func savedKeysSayTheyCanBeLeftBlank() {
+        #expect(ProfileDraft.prompt(for: .privateKey, keySaved: true)
+            == "PrivateKey from [Interface]. Leave blank to keep the saved one.")
+        #expect(ProfileDraft.prompt(for: .presharedKey, keySaved: true).hasSuffix("Leave blank to keep the saved one."))
+        #expect(!ProfileDraft.prompt(for: .privateKey).contains("Leave blank"))
+    }
+}
