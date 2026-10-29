@@ -92,23 +92,9 @@ struct PhoneImportView: View {
     }
 
     private func qrCode(_ url: URL) -> some View {
-        Group {
-            if let image = QRCode.image(for: url.absoluteString) {
-                Image(decorative: image, scale: 1)
-                    .interpolation(.none)
-                    .resizable()
-                    .scaledToFit()
-            } else {
-                Text("The code couldn't be drawn. Type the address instead.")
-                    .foregroundStyle(.black)
-                    .multilineTextAlignment(.center)
-            }
-        }
-        .frame(width: 420, height: 420)
-        .padding(20)
-        // Scanners need dark modules on a light background, even in dark mode.
-        .background(.white, in: .rect(cornerRadius: 24))
-        .accessibilityLabel("QR code for the import page")
+        QRCodeTile(text: url.absoluteString, size: 420,
+                   failureText: "The code couldn't be drawn. Type the address instead.",
+                   accessibilityLabel: "QR code for the import page")
     }
 
     private func step(_ number: Int, _ text: String) -> some View {

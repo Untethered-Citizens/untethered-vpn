@@ -54,10 +54,14 @@ struct WireGuardConfig: Hashable, Sendable {
 
 extension WireGuardConfig {
 
+    /// Stands in for an endpoint's host name or address when it's hidden.
+    static let maskedHost = "hidden.example"
+
     /// The configuration as `wg-quick` text. With `maskingKeys`, private and
     /// preshared keys are replaced by a placeholder, for showing on screen.
-    /// Public keys are not secret and are always shown.
-    func wgQuickText(maskingKeys: Bool = false) -> String {
+    /// With `maskingEndpointHosts`, each endpoint's host is replaced too and
+    /// only its port is kept. Public keys are not secret and are always shown.
+    func wgQuickText(maskingKeys: Bool = false, maskingEndpointHosts: Bool = false) -> String {
         func secret(_ key: WireGuardKey) -> String {
             maskingKeys ? WireGuardKey.masked : key.base64
         }
@@ -78,7 +82,8 @@ extension WireGuardConfig {
             lines.append("[Peer]")
             lines.append("PublicKey = \(peer.publicKey.base64)")
             if let psk = peer.presharedKey { lines.append("PresharedKey = \(secret(psk))") }
-            lines.append("Endpoint = \(peer.endpoint)")
+            let endpoint = maskingEndpointHosts ? "\(Self.maskedHost):\(peer.endpoint.port)" : peer.endpoint.description
+            lines.append("Endpoint = \(endpoint)")
             lines.append("AllowedIPs = \(list(peer.allowedIPs))")
             if let keepalive = peer.persistentKeepalive { lines.append("PersistentKeepalive = \(keepalive)") }
         }

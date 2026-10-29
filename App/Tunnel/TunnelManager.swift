@@ -351,6 +351,24 @@ extension TunnelManager {
         for entry in entries where entry.status == .connected {
             sampleConnectedAt[entry.id] = .now.addingTimeInterval(-4_330)
         }
+        // Random keys and documentation addresses, for Edit and Export
+        func key() -> String { Data((0..<32).map { _ in UInt8.random(in: .min ... .max) }).base64EncodedString() }
+        for entry in entries {
+            let text = """
+                [Interface]
+                PrivateKey = \(key())
+                Address = 10.8.0.2/32
+                DNS = 192.0.2.53
+
+                [Peer]
+                PublicKey = \(key())
+                PresharedKey = \(key())
+                Endpoint = \(entry.serverAddress)
+                AllowedIPs = 0.0.0.0/0, ::/0
+                PersistentKeepalive = 25
+                """
+            sampleConfigs[entry.id] = try? WireGuardConfig.parse(text).config
+        }
         // Home connects automatically in the several-profile sample
         if samples == .several, let index = entries.firstIndex(where: { $0.name == "Home" }) {
             entries[index].connectsAutomatically = true

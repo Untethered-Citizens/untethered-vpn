@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// One profile's screen: its status and live stats, Connect/Disconnect, and
-/// Edit and Delete. Opened with Details from the home screen.
+/// One profile's screen: its status and live stats, Connect/Disconnect,
+/// Rename, Edit, Export and Delete. Opened with Details from the home screen.
 struct ProfileDetail: View {
     let manager: TunnelManager
     let id: UUID
@@ -10,6 +10,7 @@ struct ProfileDetail: View {
     @State private var confirmingDelete = false
     @State private var editor: EditorRequest?
     @State private var renaming: RenameRequest?
+    @State private var exporting: ExportRequest?
     @State private var errorMessage: String?
     @State private var autoConnectNotes: [AutoConnect.TurnedOff] = []
 
@@ -19,8 +20,8 @@ struct ProfileDetail: View {
                 content(entry)
             }
         }
-        // tvOS draws the editor over this screen without a background of its own
-        .opacity(editor == nil ? 1 : 0)
+        // tvOS draws the editor and export over this screen without a background of their own
+        .opacity(editor == nil && exporting == nil ? 1 : 0)
         .padding(80)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .onExitCommand(perform: done)
@@ -32,11 +33,21 @@ struct ProfileDetail: View {
                        save: { try await manager.rename(request.id, to: $0) },
                        done: { renaming = nil })
         }
+        .fullScreenCover(item: $exporting) { request in
+            ExportView(export: request.export) { exporting = nil }
+                .preferredColorScheme(UntetheredVPNApp.debugColorScheme)
+        }
         .fullScreenCover(item: $editor) { request in
             ProfileEditor(manager: manager, draft: request.draft) { editor = nil }
                 .preferredColorScheme(UntetheredVPNApp.debugColorScheme)
         }
         .autoConnectNotes($autoConnectNotes)
+        #if DEBUG
+        // Launch with `-sampleDetail YES -sampleExport YES` to open Export too
+        .task {
+            if UserDefaults.standard.bool(forKey: "sampleExport"), let entry { export(entry) }
+        }
+        #endif
         .alert(
             "Something went wrong",
             isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
@@ -82,8 +93,9 @@ struct ProfileDetail: View {
                 Button("Rename", systemImage: "character.cursor.ibeam") {
                     renaming = RenameRequest(id: entry.id, name: entry.name)
                 }
-                Button("Edit Profile", systemImage: "pencil") { edit(entry) }
-                Button("Delete Profile", systemImage: "trash", role: .destructive) { confirmingDelete = true }
+                Button("Edit", systemImage: "pencil") { edit(entry) }
+                Button("Export", systemImage: "square.and.arrow.up") { export(entry) }
+                Button("Delete", systemImage: "trash", role: .destructive) { confirmingDelete = true }
             }
             .font(.title3)
         }
@@ -185,6 +197,14 @@ struct ProfileDetail: View {
             editor = try EditorRequest(editing: entry, manager: manager)
         } catch {
             errorMessage = EditorRequest.failureMessage(for: entry)
+        }
+    }
+
+    private func export(_ entry: TunnelManager.Entry) {
+        do {
+            exporting = ExportRequest(id: entry.id, export: ProfileExport(name: entry.name, config: try manager.config(for: entry.id)))
+        } catch {
+            errorMessage = "“\(entry.name)” couldn't be exported. Delete it and add it again."
         }
     }
 

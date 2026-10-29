@@ -13,6 +13,7 @@ struct HomeView: View {
     @State private var adding: AddRequest?
     @State private var detail: DetailRequest?
     @State private var renaming: RenameRequest?
+    @State private var settings: SettingsRequest?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 56) {
@@ -21,12 +22,15 @@ struct HomeView: View {
                     .font(.title2.bold())
                     .foregroundStyle(.secondary)
                 Spacer()
-                if !manager.entries.isEmpty {
-                    Button("Add Profile", systemImage: "plus", action: add)
+                HStack(spacing: 40) {
+                    if !manager.entries.isEmpty {
+                        Button("Add Profile", systemImage: "plus", action: add)
+                    }
+                    Button("Settings", systemImage: "gearshape") { settings = SettingsRequest() }
                 }
             }
             // The whole bar is a focus target, so swiping up from a profile on
-            // the left still reaches Add Profile on the right
+            // the left still reaches Add Profile and Settings on the right
             .focusSection()
 
             Group {
@@ -47,7 +51,7 @@ struct HomeView: View {
             .focusSection()
         }
         // tvOS draws the editor over the home screen without a background of its own
-        .opacity(editor == nil && adding == nil && detail == nil ? 1 : 0)
+        .opacity(editor == nil && adding == nil && detail == nil && settings == nil ? 1 : 0)
         .padding(80)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .task(id: scenePhase) {
@@ -77,6 +81,10 @@ struct HomeView: View {
             // A cover doesn't inherit the app's forced appearance
             .preferredColorScheme(UntetheredVPNApp.debugColorScheme)
         }
+        .fullScreenCover(item: $settings) { request in
+            SettingsView(done: { settings = nil }, startsOnAbout: request.startsOnAbout)
+                .preferredColorScheme(UntetheredVPNApp.debugColorScheme)
+        }
         .fullScreenCover(item: $adding) { request in
             AddProfileView(manager: manager, done: { adding = nil }, method: request.method)
                 .preferredColorScheme(UntetheredVPNApp.debugColorScheme)
@@ -90,6 +98,12 @@ struct HomeView: View {
             if UserDefaults.standard.bool(forKey: "sampleDetail"),
                let entry = manager.entries.first(where: { $0.status == .connected }) ?? manager.entries.first {
                 detail = DetailRequest(id: entry.id)
+            }
+            // Launch with `-sampleSettings main|about` to open Settings or About
+            switch UserDefaults.standard.string(forKey: "sampleSettings") {
+            case "main": settings = SettingsRequest()
+            case "about": settings = SettingsRequest(startsOnAbout: true)
+            default: break
             }
             // Launch with `-sampleRename <name>` to open Rename for the first
             // profile with that name typed in
