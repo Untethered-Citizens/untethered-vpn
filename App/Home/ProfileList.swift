@@ -36,6 +36,9 @@ struct ProfileList: View {
                             if entry.status == .connected {
                                 StatsLine(stats: stats[entry.id], compact: true)
                             }
+                            if entry.connectsAutomatically {
+                                AutoConnectMarker(compact: true)
+                            }
                         }
                         Spacer()
                         StatusLabel(status: entry.status, compact: true)

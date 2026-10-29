@@ -47,6 +47,10 @@ The Keychain tests skip themselves when the test host is built with `CODE_SIGNIN
 
 `App/Detail/ProfileDetail.swift` is one profile's screen: status, live stats, Connect/Disconnect, Rename, Edit and Delete (with a confirmation).
 
+### Connect Automatically
+
+`App/Tunnel/AutoConnect.swift`: on-demand rules (`NEOnDemandRuleConnect`, any interface) on one profile at a time, so tvOS brings the tunnel up by itself at startup, after sleep, on network changes and after a drop. `TunnelManager.setConnectsAutomatically` turns it on (and off for the others, then connects) or off. Disconnecting a profile with it on turns it off first, or tvOS would reconnect it; connecting another profile turns it off too. Both return `AutoConnect.TurnedOff` notes that the screens show in an alert. tvOS has no kill switch (`includeAllNetworks` is unavailable there, D36); the app never calls this one.
+
 ### Names
 
 `App/Editor/ProfileName.swift` holds the name rules for every path that names a profile: not empty, at most 40 characters, and not another profile's name (ignoring case, width and surrounding spaces). `RenameView` changes only the name: `TunnelManager.rename` updates the VPN configuration's `localizedDescription`, leaving the config and Keychain alone. Manual entry checks the name in `ProfileDraft` (the editor passes the other profiles' names); the QR import's review shows a taken name under Name, disables Save and offers Rename.

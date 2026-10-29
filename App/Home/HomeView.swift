@@ -8,6 +8,7 @@ struct HomeView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var pendingDelete: TunnelManager.Entry?
     @State private var errorMessage: String?
+    @State private var autoConnectNotes: [AutoConnect.TurnedOff] = []
     @State private var editor: EditorRequest?
     @State private var adding: AddRequest?
     @State private var detail: DetailRequest?
@@ -108,6 +109,7 @@ struct HomeView: View {
         } message: { _ in
             Text(TunnelManager.Entry.deleteMessage)
         }
+        .autoConnectNotes($autoConnectNotes)
         .alert(
             "Something went wrong",
             isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
@@ -159,7 +161,7 @@ struct HomeView: View {
     private func toggle(_ entry: TunnelManager.Entry) {
         Task {
             do {
-                try await manager.toggle(entry)
+                autoConnectNotes = try await manager.toggle(entry)
             } catch {
                 errorMessage = TunnelManager.Entry.connectFailureMessage(entry, error)
             }
