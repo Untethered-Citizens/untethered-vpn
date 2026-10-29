@@ -24,17 +24,26 @@ struct HomeView: View {
                     Button("Add Profile", systemImage: "plus", action: add)
                 }
             }
+            // The whole bar is a focus target, so swiping up from a profile on
+            // the left still reaches Add Profile on the right
+            .focusSection()
 
-            switch manager.entries.count {
-            case 0:
-                emptyState
-            case 1:
-                ProfileCard(entry: manager.entries[0], stats: manager.stats[manager.entries[0].id],
-                            toggle: toggle, details: showDetails, rename: rename, edit: edit, delete: { pendingDelete = $0 })
-            default:
-                ProfileList(entries: manager.entries, stats: manager.stats, preferredID: manager.preferredID,
-                            toggle: toggle, details: showDetails, rename: rename, edit: edit, delete: { pendingDelete = $0 })
+            Group {
+                switch manager.entries.count {
+                case 0:
+                    emptyState
+                case 1:
+                    ProfileCard(entry: manager.entries[0], stats: manager.stats[manager.entries[0].id],
+                                toggle: toggle, details: showDetails, rename: rename, edit: edit, delete: { pendingDelete = $0 })
+                default:
+                    ProfileList(entries: manager.entries, stats: manager.stats, preferredID: manager.preferredID,
+                                toggle: toggle, details: showDetails, rename: rename, edit: edit, delete: { pendingDelete = $0 })
+                }
             }
+            // Full width, so swiping down from Add Profile on the right reaches
+            // the profile's buttons on the left
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .focusSection()
         }
         // tvOS draws the editor over the home screen without a background of its own
         .opacity(editor == nil && adding == nil && detail == nil ? 1 : 0)
