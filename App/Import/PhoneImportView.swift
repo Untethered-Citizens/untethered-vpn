@@ -91,8 +91,10 @@ struct PhoneImportView: View {
                     HStack(spacing: 40) {
                         Button("Cancel", action: done)
                             .buttonStyle(.utPrimary)
-                        Button("Type It In Instead", systemImage: "keyboard", action: typeInstead)
-                            .buttonStyle(.utSecondary)
+                        Button(action: typeInstead) {
+                            Label { Text("Type It In Instead") } icon: { UTSymbol("ut.keyboard") }
+                        }
+                        .buttonStyle(.utSecondary)
                     }
                     .padding(.top, 8)
                 }

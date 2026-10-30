@@ -13,9 +13,7 @@ struct StatusLabel: View {
     var body: some View {
         VStack(alignment: compact ? .trailing : .leading, spacing: 12) {
             HStack(spacing: compact ? 12 : 20) {
-                Image(systemName: symbol)
-                    .font(.system(size: compact ? 28 : 46, weight: .semibold))
-                    .accessibilityHidden(true)
+                UTSymbol(Self.symbol(for: status), size: compact ? 30 : 52)
                 Text(status.label)
                     .font(compact ? .utStatusSmall : .utStatus)
             }
@@ -37,13 +35,13 @@ struct StatusLabel: View {
         .accessibilityElement(children: .combine)
     }
 
-    // SF Symbols until the app's own status symbols are added
-    private var symbol: String {
+    /// The app's own symbols, in Theme.xcassets.
+    nonisolated static func symbol(for status: TunnelStatus) -> String {
         switch status {
-        case .connected: "record.circle"
-        case .connecting, .disconnecting: "circle.dotted"
-        case .disconnected: "circle"
-        case .failed: "exclamationmark.triangle"
+        case .connected: "ut.status.connected"
+        case .connecting, .disconnecting: "ut.status.connecting"
+        case .disconnected: "ut.status.notconnected"
+        case .failed: "ut.status.failed"
         }
     }
 

@@ -300,6 +300,28 @@ private struct UTToggleLabel: View {
     }
 }
 
+// MARK: - Symbols
+
+/// One of the app's own symbols from Theme.xcassets (template images, so
+/// they take the text colour). Decorative: the text beside it says what it is.
+struct UTSymbol: View {
+    let name: String
+    var size: CGFloat = 40
+
+    init(_ name: String, size: CGFloat = 40) {
+        self.name = name
+        self.size = size
+    }
+
+    var body: some View {
+        Image(name)
+            .resizable()
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .accessibilityHidden(true)
+    }
+}
+
 // MARK: - Surfaces
 
 extension View {
