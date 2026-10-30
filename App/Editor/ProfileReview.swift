@@ -34,9 +34,16 @@ struct ProfileReview: View {
         let interface = profile.config.interface
         VStack(alignment: .leading, spacing: 36) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Review “\(name)”")
-                    .font(.utTitle2)
-                    .accessibilityAddTraits(.isHeader)
+                HStack(spacing: 24) {
+                    // Only an import from the phone offers Rename: show it arrived
+                    if canRename {
+                        UTSymbol("ut.tv.connected", size: 64)
+                            .foregroundStyle(UTColor.green)
+                    }
+                    Text("Review “\(name)”")
+                        .font(.utTitle2)
+                        .accessibilityAddTraits(.isHeader)
+                }
                 Text("Check these settings against your config. Keys stay hidden.")
                     .foregroundStyle(UTColor.muted)
             }

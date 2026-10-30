@@ -220,6 +220,33 @@ extension ButtonStyle where Self == UTRowButtonStyle {
     static var utRow: UTRowButtonStyle { UTRowButtonStyle() }
 }
 
+/// A large choice card, like the two on Add Profile: a panel with a rule
+/// outline that fills green and lifts when focused, like a row.
+struct UTCardButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        UTCardBody(configuration: configuration)
+    }
+}
+
+private struct UTCardBody: View {
+    let configuration: ButtonStyle.Configuration
+    @Environment(\.isFocused) private var isFocused
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: UTMetrics.cardRadius, style: .continuous)
+        configuration.label
+            .foregroundStyle(isFocused ? UTColor.onAccent : UTColor.ink)
+            .background(shape.fill(isFocused ? UTColor.green : UTColor.panel))
+            .overlay(shape.strokeBorder(isFocused ? .clear : UTColor.rule, lineWidth: 2))
+            .modifier(UTFocusLift(focused: isFocused, scale: UTMetrics.rowFocusScale))
+            .opacity(configuration.isPressed ? 0.88 : 1)
+    }
+}
+
+extension ButtonStyle where Self == UTCardButtonStyle {
+    static var utCard: UTCardButtonStyle { UTCardButtonStyle() }
+}
+
 /// Icon, title, optional subtitle and a chevron, for Settings-style rows.
 struct UTRowLabel: View {
     let title: String
@@ -319,6 +346,38 @@ struct UTSymbol: View {
             .scaledToFit()
             .frame(width: size, height: size)
             .accessibilityHidden(true)
+    }
+}
+
+/// A whole-screen message in place of content: a large symbol, a title,
+/// the explanation and the actions. For the empty home screen and the
+/// phone import's end states.
+struct UTMessageScreen<Actions: View>: View {
+    let symbol: String
+    let title: String
+    let message: String
+    var tint: Color = UTColor.muted
+    @ViewBuilder let actions: Actions
+
+    var body: some View {
+        VStack(spacing: 40) {
+            UTSymbol(symbol, size: 160)
+                .foregroundStyle(tint)
+            VStack(spacing: 20) {
+                Text(title)
+                    .font(.utTitle2)
+                Text(message)
+                    .foregroundStyle(UTColor.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .multilineTextAlignment(.center)
+            HStack(spacing: 40) {
+                actions
+            }
+            .padding(.top, 20)
+        }
+        .frame(maxWidth: 1100)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

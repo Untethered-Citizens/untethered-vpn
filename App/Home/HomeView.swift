@@ -143,16 +143,11 @@ struct HomeView: View {
     }
 
     private var emptyState: some View {
-        ContentUnavailableView {
-            Label("No profiles yet", systemImage: "network.slash")
-        } description: {
-            Text("A profile holds the settings for your own WireGuard server. Once you add one, you can connect this Apple TV to it from here.")
-        } actions: {
+        UTMessageScreen(symbol: "ut.tv.connecting", title: "No profiles yet",
+                        message: "A profile holds the settings for your own WireGuard server. Once you add one, you can connect this Apple TV to it from here.") {
             Button("Add Profile", systemImage: "plus", action: add)
                 .buttonStyle(.utHero)
         }
-        .frame(maxWidth: 1100)
-        .frame(maxWidth: .infinity)
     }
 
     private func add() {
