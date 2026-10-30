@@ -147,21 +147,12 @@ struct PhoneImportView: View {
     // MARK: - Ended without a profile
 
     private func ended(_ problem: PhoneImport.Problem) -> some View {
-        ContentUnavailableView {
-            Label(problem.title, systemImage: problem == .noNetwork ? "wifi.slash" : "qrcode")
-        } description: {
-            Text(problem.message)
-        } actions: {
-            HStack(spacing: 40) {
-                Button("Start Again") { phoneImport.start() }
-                    .buttonStyle(.utPrimary)
-                    .fixedSize()
-                Button("Cancel", action: done)
-                    .buttonStyle(.utSecondary)
-                    .fixedSize()
-            }
+        UTMessageScreen(symbol: "ut.tv.failed", title: problem.title,
+                        message: problem.message, tint: UTColor.plum) {
+            Button("Start Again") { phoneImport.start() }
+                .buttonStyle(.utPrimary)
+            Button("Cancel", action: done)
+                .buttonStyle(.utSecondary)
         }
-        .frame(maxWidth: 1100)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

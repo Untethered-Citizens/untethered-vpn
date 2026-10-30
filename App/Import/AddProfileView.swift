@@ -30,10 +30,9 @@ struct AddProfileView: View {
         VStack(alignment: .leading, spacing: 56) {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Add a profile")
-                    .font(.title2.bold())
+                    .font(.utTitle2)
                 Text("A profile holds the settings from your WireGuard config. Choose how to bring them to this Apple TV.")
-                    .font(.body)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(UTColor.muted)
             }
 
             HStack(spacing: 60) {
@@ -48,26 +47,41 @@ struct AddProfileView: View {
             }
 
             Button("Cancel", action: done)
+                .buttonStyle(.utSecondary)
         }
-        .padding(80)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.vertical, 60)
+        .utScreen()
     }
 
     private func option(_ title: String, symbol: String, detail: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 20) {
-                UTSymbol(symbol, size: 84)
-                Text(title)
-                    .font(.title3.bold())
-                Text(detail)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .frame(width: 640, height: 360, alignment: .topLeading)
-            .padding(40)
+            OptionLabel(title: title, symbol: symbol, detail: detail)
         }
-        .buttonStyle(.card)
+        .buttonStyle(.utCard)
+    }
+}
+
+/// A choice card's content; the detail text dims less when focused, so it
+/// stays readable on green.
+private struct OptionLabel: View {
+    let title: String
+    let symbol: String
+    let detail: String
+    @Environment(\.utFocused) private var focused
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            UTSymbol(symbol, size: 84)
+                .foregroundStyle(focused ? UTColor.onAccent : UTColor.green)
+            Text(title)
+                .font(.utHeadline)
+            Text(detail)
+                .font(.utCaption)
+                .foregroundStyle(focused ? UTColor.onAccent : UTColor.muted)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(width: 640, height: 360, alignment: .topLeading)
+        .padding(48)
     }
 }
 

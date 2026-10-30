@@ -19,7 +19,7 @@ struct ThemeTests {
 
     /// A missing image draws nothing, so check every symbol the app names.
     @Test(arguments: [TunnelStatus.disconnected, .connecting, .connected, .disconnecting, .failed("")]
-          .map(StatusLabel.symbol(for:)) + ["ut.phone", "ut.keyboard"])
+          .map(StatusLabel.symbol(for:)) + ["ut.phone", "ut.keyboard", "ut.tv.connected", "ut.tv.connecting", "ut.tv.failed"])
     func symbolExists(name: String) {
         #expect(UIImage(named: name) != nil)
     }
