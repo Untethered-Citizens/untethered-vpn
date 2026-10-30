@@ -10,14 +10,17 @@ struct ExportView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 40) {
             Text("Export “\(export.name)”")
-                .font(.title2.bold())
+                .font(.utTitle2)
+                .accessibilityAddTraits(.isHeader)
 
             HStack(alignment: .top, spacing: 72) {
                 VStack(alignment: .leading, spacing: 28) {
+                    // Barlow has no monospaced cut; a config reads best in one
                     Text(export.text)
-                        .font(.callout.monospaced())
+                        .font(.system(size: 28, design: .monospaced))
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .utPanel(radius: UTMetrics.cardRadius, padding: 40)
 
                     Label {
                         Text(ProfileExport.hiddenNote)
@@ -25,8 +28,8 @@ struct ExportView: View {
                     } icon: {
                         Image(systemName: "eye.slash")
                     }
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .font(.utCaption)
+                    .foregroundStyle(UTColor.muted)
                 }
 
                 VStack(spacing: 24) {
@@ -34,8 +37,8 @@ struct ExportView: View {
                                failureText: "The code couldn't be drawn.",
                                accessibilityLabel: "QR code of the exported profile")
                     Text(ProfileExport.qrHint)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
+                        .font(.utCaption)
+                        .foregroundStyle(UTColor.muted)
                         .multilineTextAlignment(.center)
                         .frame(width: 400)
                         .fixedSize(horizontal: false, vertical: true)
@@ -43,10 +46,10 @@ struct ExportView: View {
             }
 
             Button("Done", action: done)
-                .font(.title3)
+                .buttonStyle(.utPrimary)
         }
-        .padding(80)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.vertical, 60)
+        .utScreen()
         .onExitCommand(perform: done)
     }
 }

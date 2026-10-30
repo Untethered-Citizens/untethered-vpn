@@ -13,15 +13,16 @@ struct TunnelLogView: View {
         HStack(alignment: .top, spacing: 72) {
             VStack(alignment: .leading, spacing: 24) {
                 Text("Tunnel Log")
-                    .font(.title2.bold())
+                    .font(.utTitle2)
+                    .accessibilityAddTraits(.isHeader)
                 Text(TunnelLogText.explanation)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .font(.utCaption)
+                    .foregroundStyle(UTColor.muted)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if lines.isEmpty {
                     Text(log == nil ? TunnelLogText.unavailable : TunnelLogText.empty)
-                        .font(.title3)
+                        .foregroundStyle(UTColor.muted)
                         .padding(.top, 24)
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
@@ -31,7 +32,9 @@ struct TunnelLogView: View {
                                 LogRow(line: line)
                             }
                         }
+                        .padding(16)
                     }
+                    .background(UTColor.panel, in: RoundedRectangle(cornerRadius: UTMetrics.cardRadius, style: .continuous))
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -42,18 +45,18 @@ struct TunnelLogView: View {
                                failureText: "The code couldn't be drawn.",
                                accessibilityLabel: "QR code of the newest log lines")
                     Text(TunnelLogText.qrHint(TunnelLogText.qrLineCount(lines)))
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
+                        .font(.utCaption)
+                        .foregroundStyle(UTColor.muted)
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                     Button("Clear Log", systemImage: "trash", role: .destructive) { confirmingClear = true }
-                        .font(.title3)
+                        .buttonStyle(.utDestructive)
                 }
             }
             .frame(width: 400)
         }
-        .padding(80)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.vertical, 60)
+        .utScreen()
         // New lines appear while the screen is open, for example while reconnecting
         .task {
             while !Task.isCancelled {
@@ -82,19 +85,19 @@ private struct LogRow: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 24) {
             Text(line.date.formatted(date: .abbreviated, time: .standard))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(focused ? UTColor.ink : UTColor.muted)
                 .frame(width: 330, alignment: .leading)
             Text(line.source.rawValue)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(focused ? UTColor.ink : UTColor.muted)
                 .frame(width: 110, alignment: .leading)
             Text(line.text)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .font(.caption.monospacedDigit())
+        .font(.utCaption.monospacedDigit())
         .padding(.vertical, 10)
         .padding(.horizontal, 16)
-        .background(focused ? AnyShapeStyle(.quaternary) : AnyShapeStyle(.clear), in: .rect(cornerRadius: 12))
+        .utReadingHighlight(focused, radius: 12)
         .focusable()
         .focused($focused)
     }

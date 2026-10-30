@@ -9,20 +9,29 @@ struct AboutView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 32) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Untethered VPN")
-                        .font(.largeTitle.bold())
-                    Text("A client for WireGuard®")
-                        .font(.title3)
-                    Text(About.version(Bundle.main.infoDictionary ?? [:]))
-                        .font(.title3)
-                        .foregroundStyle(.secondary)
+                HStack(spacing: 32) {
+                    Image("UTMark")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 128, height: 128)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Untethered VPN")
+                            .font(.utTitle)
+                            .accessibilityAddTraits(.isHeader)
+                        Text("A client for WireGuard®  ·  \(About.version(Bundle.main.infoDictionary ?? [:]))")
+                            .font(.utBody)
+                            .foregroundStyle(UTColor.muted)
+                    }
                 }
                 .padding(.bottom, 16)
 
-                ForEach(About.notices, id: \.self) { notice in
-                    FocusableBlock { Text(notice) }
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(About.notices, id: \.self) { notice in
+                        FocusableBlock { Text(notice).font(.utBody) }
+                    }
                 }
+                .utPanel(padding: 24)
 
                 if let licences {
                     ForEach(Array(licences.blocks.enumerated()), id: \.offset) { _, block in
@@ -34,10 +43,12 @@ struct AboutView: View {
                     }
                 }
             }
-            .font(.callout)
+            .font(.utCaption)
             .frame(maxWidth: 1400, alignment: .leading)
             .padding(.vertical, 40)
         }
+        .scrollClipDisabled()
+        .utScreen()
     }
 
     @ViewBuilder
@@ -45,12 +56,14 @@ struct AboutView: View {
         switch block {
         case .title(let text):
             Text(text)
-                .font(.title2.bold())
+                .font(.utTitle2)
                 .padding(.top, 32)
+                .accessibilityAddTraits(.isHeader)
         case .heading(let text):
             Text(text)
-                .font(.headline)
+                .font(.utHeadline)
                 .padding(.top, 16)
+                .accessibilityAddTraits(.isHeader)
         case .paragraph(let text):
             FocusableBlock { Text(markdown: text) }
         case .bullets(let items):
@@ -68,8 +81,9 @@ struct AboutView: View {
             // One focus stop per paragraph, so a long licence never runs off screen
             ForEach(Array(text.components(separatedBy: "\n\n").enumerated()), id: \.offset) { _, paragraph in
                 FocusableBlock {
+                    // Barlow has no monospaced cut, so licence texts keep the system's
                     Text(paragraph)
-                        .font(.caption.monospaced())
+                        .font(.system(size: 26, design: .monospaced))
                 }
             }
         }
@@ -94,7 +108,7 @@ enum About {
 }
 
 /// A block of text that can take focus, so ScrollView scrolls to it, with a
-/// light highlight while focused.
+/// soft green highlight while focused.
 private struct FocusableBlock<Content: View>: View {
     @ViewBuilder let content: Content
     @FocusState private var focused: Bool
@@ -104,7 +118,7 @@ private struct FocusableBlock<Content: View>: View {
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(20)
-            .background(focused ? AnyShapeStyle(.quaternary) : AnyShapeStyle(.clear), in: .rect(cornerRadius: 16))
+            .utReadingHighlight(focused)
             .focusable()
             .focused($focused)
     }
