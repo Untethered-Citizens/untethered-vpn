@@ -4,6 +4,8 @@ import SwiftUI
 struct AutoConnectMarker: View {
     var compact = false
 
+    @Environment(\.utFocused) private var focused
+
     var body: some View {
         // A Label crowds the icon against the text on a focused row
         HStack(spacing: 12) {
@@ -11,8 +13,8 @@ struct AutoConnectMarker: View {
                 .accessibilityHidden(true)
             Text("Connects automatically")
         }
-        .font(compact ? .callout : .title3)
-        .foregroundStyle(.secondary)
+        .font(compact ? .utCaption : .utBody)
+        .foregroundStyle(focused ? UTColor.onAccent : UTColor.muted)
     }
 }
 

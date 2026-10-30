@@ -34,6 +34,7 @@ struct PhoneImportView: View {
                 ended(problem)
             }
         }
+        .utScreen()
         .onAppear { phoneImport.start() }
         .onDisappear { phoneImport.stop() }
         .onChange(of: scenePhase) { _, phase in
@@ -51,14 +52,23 @@ struct PhoneImportView: View {
     private func waiting(url: URL, expires: Date) -> some View {
         VStack(alignment: .leading, spacing: 40) {
             Text("Add a profile from your phone")
-                .font(.title2.bold())
+                .font(.utTitle2)
 
             HStack(alignment: .top, spacing: 72) {
                 VStack(spacing: 28) {
                     qrCode(url)
                     TimelineView(.periodic(from: .now, by: 1)) { context in
-                        Label(PhoneImport.timeLeft(until: expires, now: context.date), systemImage: "timer")
-                            .font(.title3.monospacedDigit())
+                        HStack(spacing: 16) {
+                            Image(systemName: "timer")
+                                .font(.system(size: 36, weight: .semibold))
+                                .foregroundStyle(UTColor.ochreInk)
+                                .accessibilityHidden(true)
+                            Text(PhoneImport.timeLeft(until: expires, now: context.date))
+                                .font(.utCountdown.monospacedDigit())
+                        }
+                        .padding(.horizontal, 32)
+                        .padding(.vertical, 14)
+                        .background(Capsule().fill(UTColor.panel))
                     }
                 }
 
@@ -69,16 +79,20 @@ struct PhoneImportView: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Or type this address into the phone's browser:")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
+                            .font(.utCaption)
+                            .foregroundStyle(UTColor.muted)
                         Text(url.absoluteString)
-                            .font(.callout.monospaced())
+                            .font(.system(size: 30, design: .monospaced))
                             .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .utPanel(radius: UTMetrics.cardRadius, padding: 28)
                     }
 
                     HStack(spacing: 40) {
                         Button("Cancel", action: done)
-                        Button("Type It In Instead", action: typeInstead)
+                            .buttonStyle(.utPrimary)
+                        Button("Type It In Instead", systemImage: "keyboard", action: typeInstead)
+                            .buttonStyle(.utSecondary)
                     }
                     .padding(.top, 8)
                 }
@@ -98,28 +112,34 @@ struct PhoneImportView: View {
     }
 
     private func step(_ number: Int, _ text: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: 20) {
+        HStack(alignment: .center, spacing: 26) {
             Text("\(number)")
-                .font(.headline)
-                .frame(width: 36)
+                .font(UTFont.condensed(40))
+                .frame(width: 62, height: 62)
+                .background(Circle().fill(UTColor.greenSoft))
+                .accessibilityHidden(true)
             Text(text)
-                .font(.body)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     private var help: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Trouble connecting?")
-                .font(.headline)
-            Group {
+        VStack(alignment: .leading, spacing: 16) {
+            Label {
+                Text("Trouble connecting?").font(.utHeadline)
+            } icon: {
+                Image(systemName: "wifi").foregroundStyle(UTColor.green)
+            }
+            HStack(alignment: .top, spacing: 64) {
                 Text("Hotel and guest Wi-Fi often keeps devices apart. Turn on your phone's Personal Hotspot, join it from this Apple TV in Settings → Network, then scan again.")
                 Text("If the network has a sign-in page, finish signing in on this Apple TV and on the phone first. The phone can't use mobile data to reach the TV.")
             }
-            .font(.callout)
-            .foregroundStyle(.secondary)
+            .font(.utCaption)
+            .foregroundStyle(UTColor.muted)
             .fixedSize(horizontal: false, vertical: true)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .utPanel(padding: 44)
     }
 
     // MARK: - Ended without a profile
@@ -132,9 +152,10 @@ struct PhoneImportView: View {
         } actions: {
             HStack(spacing: 40) {
                 Button("Start Again") { phoneImport.start() }
-                    .font(.title3.bold())
+                    .buttonStyle(.utPrimary)
                     .fixedSize()
                 Button("Cancel", action: done)
+                    .buttonStyle(.utSecondary)
                     .fixedSize()
             }
         }

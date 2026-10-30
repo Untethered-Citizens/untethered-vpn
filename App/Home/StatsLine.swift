@@ -6,22 +6,24 @@ struct StatsLine: View {
     let stats: LiveStats?
     var compact = false
 
+    @Environment(\.utFocused) private var focused
+
     var body: some View {
         if let stats, stats.tunnel != nil {
             Group {
                 if let silence = stats.silence {
                     HStack(alignment: .firstTextBaseline, spacing: 12) {
                         Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(focused ? UTColor.onAccent : UTColor.ochreInk)
                             .accessibilityHidden(true)
                         Text(silence.shortMessage)
                     }
                 } else {
                     Text(summary(stats))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(focused ? UTColor.onAccent : UTColor.muted)
                 }
             }
-            .font(compact ? .callout : .title3)
+            .font(compact ? .utCaption : .utBody)
         }
     }
 

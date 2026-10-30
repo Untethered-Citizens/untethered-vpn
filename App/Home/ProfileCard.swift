@@ -15,10 +15,9 @@ struct ProfileCard: View {
         VStack(alignment: .leading, spacing: 32) {
             VStack(alignment: .leading, spacing: 12) {
                 Text(entry.name)
-                    .font(.largeTitle.bold())
+                    .font(.utDisplay)
                 Text("Server: \(entry.serverAddress)")
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(UTColor.muted)
             }
 
             VStack(alignment: .leading, spacing: 16) {
@@ -36,10 +35,8 @@ struct ProfileCard: View {
                     toggle(entry)
                 } label: {
                     Text(entry.status.actionTitle)
-                        .font(.title2.bold())
-                        .frame(minWidth: 480)
-                        .padding(.vertical, 12)
                 }
+                .buttonStyle(.utHero)
                 .disabled(entry.status == .disconnecting)
                 .contextMenu {
                     Button("Details", systemImage: "info.circle") { details(entry) }
@@ -52,15 +49,17 @@ struct ProfileCard: View {
                     details(entry)
                 } label: {
                     Label("Details", systemImage: "info.circle")
-                        .font(.title2)
-                        .padding(.vertical, 12)
                 }
+                .buttonStyle(.utSecondary)
             }
 
             Text("Details shows this connection's stats, and is where you rename, edit, export or delete the profile.")
-                .font(.body)
-                .foregroundStyle(.secondary)
+                .font(.utCaption)
+                .foregroundStyle(UTColor.muted)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .frame(maxWidth: 1120, alignment: .leading)
+        .utPanel(padding: 76)
     }
 }
 

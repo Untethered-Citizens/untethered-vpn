@@ -40,9 +40,11 @@ struct QRCodeTile: View {
             }
         }
         .frame(width: size, height: size)
-        .padding(20)
-        // Scanners need dark modules on a light background, even in dark mode.
-        .background(.white, in: .rect(cornerRadius: 24))
+        .padding(32)
+        // Scanners need dark modules on a light background, even in dark mode:
+        // the light panel colour in both
+        .background(Color(red: 0xF8 / 255, green: 0xFA / 255, blue: 0xF6 / 255),
+                    in: .rect(cornerRadius: UTMetrics.cardRadius, style: .continuous))
         .accessibilityLabel(accessibilityLabel)
     }
 }

@@ -22,8 +22,9 @@ struct ProfileDetail: View {
         }
         // tvOS draws the editor and export over this screen without a background of their own
         .opacity(editor == nil && exporting == nil ? 1 : 0)
-        .padding(80)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.horizontal, 80)
+        .padding(.vertical, 60)
+        .utScreen()
         .onExitCommand(perform: done)
         .onChange(of: entry == nil) { _, gone in
             if gone { done() }
@@ -64,16 +65,17 @@ struct ProfileDetail: View {
 
     private func content(_ entry: TunnelManager.Entry) -> some View {
         let stats = entry.status == .connected ? manager.stats[id] : nil
-        return VStack(alignment: .leading, spacing: 48) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(entry.name)
-                    .font(.largeTitle.bold())
-                Text("Server: \(StatsFormat.endpoint(configured: entry.serverAddress, inUse: stats?.tunnel?.endpoint))")
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
+        return VStack(alignment: .leading, spacing: 44) {
+            HStack(alignment: .top, spacing: 40) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(entry.name)
+                        .font(.utTitle)
+                    Text("Server: \(StatsFormat.endpoint(configured: entry.serverAddress, inUse: stats?.tunnel?.endpoint))")
+                        .foregroundStyle(UTColor.muted)
+                }
+                Spacer()
+                StatusLabel(status: entry.status, ground: UTColor.panel)
             }
-
-            StatusLabel(status: entry.status)
 
             statsSection(entry, stats)
 
@@ -84,20 +86,21 @@ struct ProfileDetail: View {
                     toggle(entry)
                 } label: {
                     Text(entry.status.actionTitle)
-                        .font(.title2.bold())
-                        .frame(minWidth: 340)
-                        .padding(.vertical, 12)
                 }
+                .buttonStyle(.utHero)
                 .disabled(entry.status == .disconnecting)
 
-                Button("Rename", systemImage: "character.cursor.ibeam") {
-                    renaming = RenameRequest(id: entry.id, name: entry.name)
+                Group {
+                    Button("Rename", systemImage: "character.cursor.ibeam") {
+                        renaming = RenameRequest(id: entry.id, name: entry.name)
+                    }
+                    Button("Edit", systemImage: "pencil") { edit(entry) }
+                    Button("Export", systemImage: "square.and.arrow.up") { export(entry) }
                 }
-                Button("Edit", systemImage: "pencil") { edit(entry) }
-                Button("Export", systemImage: "square.and.arrow.up") { export(entry) }
+                .buttonStyle(.utSecondary)
                 Button("Delete", systemImage: "trash", role: .destructive) { confirmingDelete = true }
+                    .buttonStyle(.utDestructive)
             }
-            .font(.title3)
         }
         .confirmationDialog(entry.deleteTitle, isPresented: $confirmingDelete, titleVisibility: .visible) {
             Button("Delete", role: .destructive) { delete(entry) }
@@ -110,38 +113,40 @@ struct ProfileDetail: View {
     @ViewBuilder
     private func statsSection(_ entry: TunnelManager.Entry, _ stats: LiveStats?) -> some View {
         if let stats, let tunnel = stats.tunnel {
-            VStack(alignment: .leading, spacing: 28) {
-                Grid(alignment: .leading, horizontalSpacing: 48, verticalSpacing: 16) {
-                    if let connected = stats.connectedFor {
-                        row("Connected for", StatsFormat.duration(connected))
+            VStack(alignment: .leading, spacing: 32) {
+                Grid(alignment: .leading, horizontalSpacing: 64, verticalSpacing: 32) {
+                    GridRow {
+                        if let connected = stats.connectedFor {
+                            UTStat("Connected for", StatsFormat.duration(connected))
+                        }
+                        UTStat("Last handshake", stats.handshakeAge.map { "\(StatsFormat.duration($0)) ago" } ?? "Never")
                     }
-                    row("Last handshake", stats.handshakeAge.map { "\(StatsFormat.duration($0)) ago" } ?? "Never")
-                    row("Received", StatsFormat.bytes(tunnel.receivedBytes))
-                    row("Sent", StatsFormat.bytes(tunnel.sentBytes))
+                    Divider().overlay(UTColor.rule).gridCellColumns(2)
+                    GridRow {
+                        UTStat("Received", StatsFormat.bytes(tunnel.receivedBytes))
+                        UTStat("Sent", StatsFormat.bytes(tunnel.sentBytes))
+                    }
                 }
-                .font(.title3)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
                 if let silence = stats.silence {
                     HStack(alignment: .firstTextBaseline, spacing: 16) {
                         Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(UTColor.ochreInk)
                             .accessibilityHidden(true)
-                        // Orange text is hard to read on the light background; the icon carries the colour
                         Text(silence.message)
                             .fixedSize(horizontal: false, vertical: true)
                     }
-                    .font(.title3)
                     .frame(maxWidth: 1300, alignment: .leading)
                 }
             }
+            .utPanel(padding: 52)
         } else if entry.status == .connected {
             Text("Getting the connection's stats…")
-                .font(.title3)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(UTColor.muted)
         } else {
             Text("While connected, this shows the last handshake and the data sent and received.")
-                .font(.title3)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(UTColor.muted)
                 .frame(maxWidth: 1300, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -149,14 +154,12 @@ struct ProfileDetail: View {
 
     private func autoConnectSection(_ entry: TunnelManager.Entry) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Toggle(isOn: Binding(get: { entry.connectsAutomatically }, set: { setAutomatic(entry, $0) })) {
-                Label("Connect Automatically", systemImage: "arrow.triangle.2.circlepath")
-                    .font(.title3)
-            }
-            .frame(maxWidth: 900)
+            Toggle("Connect Automatically", isOn: Binding(get: { entry.connectsAutomatically }, set: { setAutomatic(entry, $0) }))
+                .toggleStyle(UTToggleStyle(systemImage: "arrow.triangle.2.circlepath"))
+                .frame(maxWidth: 1000)
             Text("When on, this Apple TV connects to this profile by itself: at startup, after sleep and when the network changes, without opening the app. One profile at a time.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
+                .font(.utCaption)
+                .foregroundStyle(UTColor.muted)
                 .frame(maxWidth: 1300, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -169,16 +172,6 @@ struct ProfileDetail: View {
             } catch {
                 errorMessage = "Connect Automatically couldn't be changed for “\(entry.name)”. \(error.localizedDescription)"
             }
-        }
-    }
-
-    private func row(_ label: String, _ value: String) -> some View {
-        GridRow {
-            Text(label)
-                .foregroundStyle(.secondary)
-            Text(value)
-                .bold()
-                .monospacedDigit()
         }
     }
 

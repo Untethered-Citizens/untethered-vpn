@@ -1,0 +1,18 @@
+{
+  "images": [
+    {
+      "filename": "UTMark.png",
+      "idiom": "tv",
+      "scale": "1x"
+    },
+    {
+      "filename": "UTMark@2x.png",
+      "idiom": "tv",
+      "scale": "2x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

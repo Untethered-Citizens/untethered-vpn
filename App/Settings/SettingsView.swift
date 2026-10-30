@@ -14,24 +14,36 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack(path: $path) {
-            VStack(alignment: .leading, spacing: 40) {
-                Text("Settings")
-                    .font(.title2.bold())
+            HStack(spacing: 120) {
+                VStack(spacing: 40) {
+                    Image("UTMark")
+                        .resizable()
+                        .frame(width: 360, height: 360)
+                        .clipShape(RoundedRectangle(cornerRadius: 72, style: .continuous))
+                        .accessibilityHidden(true)
+                    Text("Untethered VPN")
+                        .font(.utTitle2)
+                }
+                .frame(width: 520)
 
-                VStack(alignment: .leading, spacing: 40) {
+                VStack(alignment: .leading, spacing: 32) {
+                    Text("Settings")
+                        .font(.utTitle)
+
                     link(.log, "Tunnel Log", "list.bullet.rectangle",
                          "What the VPN did recently, with keys and addresses hidden. Useful when something goes wrong.")
                     link(.about, "About Untethered VPN", "info.circle",
                          "The version, licences and the WireGuard trademark notice.")
-                }
-                .frame(maxWidth: 1000)
-                .font(.title3)
 
-                Button("Done", action: done)
-                    .font(.title3)
+                    Button("Done", action: done)
+                        .buttonStyle(.utSecondary)
+                        .padding(.top, 8)
+                }
+                .frame(maxWidth: 1050)
             }
             .padding(80)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .frame(maxHeight: .infinity)
+            .utScreen()
             .onExitCommand(perform: done)
             .navigationDestination(for: Page.self) { page in
                 switch page {
@@ -44,16 +56,10 @@ struct SettingsView: View {
     }
 
     private func link(_ page: Page, _ title: String, _ image: String, _ detail: String) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            NavigationLink(value: page) {
-                Label(title, systemImage: image)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            Text(detail)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+        NavigationLink(value: page) {
+            UTRowLabel(title: title, subtitle: detail, systemImage: image)
         }
+        .buttonStyle(.utRow)
     }
 }
 
