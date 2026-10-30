@@ -24,6 +24,13 @@ struct ThemeTests {
         #expect(UIImage(named: name) != nil)
     }
 
+    /// tvOS draws the launch screen from these names; a missing one shows nothing.
+    @Test func launchScreenAssetsExist() throws {
+        let launch = try #require(Bundle.main.object(forInfoDictionaryKey: "UILaunchScreen") as? [String: String])
+        #expect(UIColor(named: try #require(launch["UIColorName"])) != nil)
+        #expect(UIImage(named: try #require(launch["UIImageName"])) != nil)
+    }
+
     @Test func licenceIsShown() throws {
         let licences = try #require(LicenceDocument.bundled())
         #expect(licences.blocks.contains(.heading("Barlow and Barlow Condensed")))

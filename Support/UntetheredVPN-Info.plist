@@ -14,6 +14,13 @@
 		<string>BarlowCondensed-SemiBold.ttf</string>
 		<string>BarlowCondensed-Bold.ttf</string>
 	</array>
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>UTBackground</string>
+		<key>UIImageName</key>
+		<string>UTMark</string>
+	</dict>
 	<key>UVAppGroupID</key>
 	<string>$(APP_GROUP_ID)</string>
 	<key>UVKeychainGroup</key>
