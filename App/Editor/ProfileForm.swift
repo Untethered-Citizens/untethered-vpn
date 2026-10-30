@@ -25,11 +25,16 @@ struct ProfileForm: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 48) {
-                Text(draft.isEditing
-                     ? "Change any setting, then select Review. Saved keys stay unless you type new ones."
-                     : "Copy these settings from your WireGuard config. To type with your iPhone, select a field and use the keyboard notification on the phone.")
-                    .font(.body)
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(draft.isEditing ? "Edit Profile" : "Add Profile")
+                        .font(.utTitle2)
+                        .accessibilityAddTraits(.isHeader)
+                    Text(draft.isEditing
+                         ? "Change any setting, then select Review. Saved keys stay unless you type new ones."
+                         : "Copy these settings from your WireGuard config. To type with your iPhone, select a field and use the keyboard notification on the phone.")
+                        .foregroundStyle(UTColor.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
 
                 section("Profile") {
                     row(.name, "Name", hint: "Shown on the home screen.")
@@ -51,6 +56,7 @@ struct ProfileForm: View {
                         Button("Remove Saved Preshared Key", role: .destructive) {
                             draft.savedPresharedKey = nil
                         }
+                        .buttonStyle(.utDestructive)
                     }
                     row(.endpoint, "Endpoint", hint: "The server's public address and port.")
                     row(.allowedIPs, "AllowedIPs", hint: "0.0.0.0/0, ::/0 sends all traffic through your server.")
@@ -60,31 +66,30 @@ struct ProfileForm: View {
 
                 if !draft.otherPeers.isEmpty {
                     Text("This profile has \(draft.otherPeers.count) more \(draft.otherPeers.count == 1 ? "peer" : "peers"), which stay as they are.")
-                        .font(.body)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(UTColor.muted)
                 }
 
                 VStack(alignment: .leading, spacing: 24) {
                     if showsSummary, !draft.problemFields.isEmpty {
                         Label("Fix the settings marked in red, then select Review.", systemImage: "exclamationmark.circle.fill")
-                            .font(.title3)
-                            .foregroundStyle(.red)
+                            .font(.utHeadline)
+                            .foregroundStyle(UTColor.plum)
                     }
-                    HStack(spacing: 40) {
-                        Button {
-                            submit()
-                        } label: {
-                            Text("Review").font(.title3.bold()).frame(minWidth: 320)
-                        }
+                    HStack(spacing: 28) {
+                        Button("Review", action: submit)
+                            .buttonStyle(.utHero)
                         Button("Cancel", role: .cancel, action: cancel)
+                            .buttonStyle(.utSecondary)
                     }
                 }
             }
-            .frame(maxWidth: 1300, alignment: .leading)
+            .frame(maxWidth: 1400, alignment: .leading)
             .padding(.vertical, 40)
             .frame(maxWidth: .infinity)
         }
-        .navigationTitle(draft.isEditing ? "Edit Profile" : "Add Profile")
+        // Rows lift when focused; don't clip them at the edges
+        .scrollClipDisabled()
+        .utScreen()
     }
 
     private func submit() {
@@ -101,7 +106,8 @@ struct ProfileForm: View {
     private func section(_ title: String, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 32) {
             Text(title)
-                .font(.title3.bold())
+                .font(.utHeadline)
+                .accessibilityAddTraits(.isHeader)
             content()
         }
     }
@@ -116,9 +122,7 @@ struct ProfileForm: View {
         }
         let problem = checked.contains(field) ? draft.problem(in: field) : nil
 
-        return VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .font(.headline)
+        return UTFieldRow(label: title, note: problem ?? hint, isProblem: problem != nil, focused: focused == field) {
             Group {
                 if secure {
                     SecureField(title, text: text, prompt: Text(prompt))
@@ -130,16 +134,6 @@ struct ProfileForm: View {
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
             .focused($focused, equals: field)
-
-            if let problem {
-                Label(problem, systemImage: "exclamationmark.circle.fill")
-                    .font(.callout)
-                    .foregroundStyle(.red)
-            } else {
-                Text(hint)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
         }
     }
 

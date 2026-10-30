@@ -26,44 +26,39 @@ struct RenameView: View {
 
     var body: some View {
         let problem = ProfileName.problem(name, otherNames: otherNames)
-        VStack(alignment: .leading, spacing: 40) {
+        VStack(alignment: .leading, spacing: 48) {
             Text("Rename Profile")
-                .font(.title2.bold())
+                .font(.utTitle2)
+                .accessibilityAddTraits(.isHeader)
 
-            VStack(alignment: .leading, spacing: 16) {
+            UTFieldRow(label: "Name",
+                       note: changed ? problem ?? Self.hint : Self.hint,
+                       isProblem: changed && problem != nil,
+                       focused: fieldFocused) {
                 TextField("Name", text: $name, prompt: Text("Profile name, such as Home"))
                     .focused($fieldFocused)
                     .onChange(of: name) { changed = true }
-                Group {
-                    if changed, let problem {
-                        Label(problem, systemImage: "exclamationmark.circle.fill")
-                            .foregroundStyle(.red)
-                    } else {
-                        Text("Shown on the home screen. The profile's settings and keys don't change.")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .font(.callout)
-                .fixedSize(horizontal: false, vertical: true)
             }
 
-            HStack(spacing: 40) {
+            HStack(spacing: 28) {
                 Button {
                     submit(problem: problem)
                 } label: {
                     HStack(spacing: 16) {
                         if isSaving { ProgressView() }
-                        Text(isSaving ? "Saving…" : "Save").font(.title3.bold())
+                        Text(isSaving ? "Saving…" : "Save")
                     }
-                    .frame(minWidth: 280)
                 }
+                .buttonStyle(.utPrimary)
                 .disabled(isSaving)
                 Button("Cancel", role: .cancel, action: done)
+                    .buttonStyle(.utSecondary)
                     .disabled(isSaving)
             }
         }
-        .frame(maxWidth: 1100, alignment: .leading)
+        .frame(maxWidth: 1300, alignment: .leading)
         .padding(80)
+        .utScreen()
         .alert(
             "Not renamed",
             isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })
@@ -73,6 +68,8 @@ struct RenameView: View {
             Text(errorMessage ?? "")
         }
     }
+
+    private static let hint = "Shown on the home screen. The profile's settings and keys don't change."
 
     private func submit(problem: String?) {
         changed = true
