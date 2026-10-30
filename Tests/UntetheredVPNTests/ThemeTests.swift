@@ -1,0 +1,25 @@
+import Foundation
+import Testing
+import UIKit
+@testable import UntetheredVPN
+
+struct ThemeTests {
+
+    /// A font name with no matching font falls back to the system font
+    /// silently, so check each one the theme asks for.
+    @Test(arguments: UTFont.allNames.sorted())
+    func fontLoads(name: String) {
+        #expect(UIFont(name: name, size: 20)?.fontName == name)
+    }
+
+    @Test func everyFontIsListed() throws {
+        let listed = try #require(Bundle.main.object(forInfoDictionaryKey: "UIAppFonts") as? [String])
+        #expect(Set(listed) == Set(UTFont.allNames.map { "\($0).ttf" }))
+    }
+
+    @Test func licenceIsShown() throws {
+        let licences = try #require(LicenceDocument.bundled())
+        #expect(licences.blocks.contains(.heading("Barlow and Barlow Condensed")))
+        #expect(licences.blocks.contains(.heading("SIL Open Font License 1.1 (Barlow)")))
+    }
+}

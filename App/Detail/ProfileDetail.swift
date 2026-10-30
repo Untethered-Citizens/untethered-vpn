@@ -23,7 +23,6 @@ struct ProfileDetail: View {
         // tvOS draws the editor and export over this screen without a background of their own
         .opacity(editor == nil && exporting == nil ? 1 : 0)
         .padding(.horizontal, 80)
-        .padding(.vertical, 60)
         .utScreen()
         .onExitCommand(perform: done)
         .onChange(of: entry == nil) { _, gone in
@@ -65,7 +64,7 @@ struct ProfileDetail: View {
 
     private func content(_ entry: TunnelManager.Entry) -> some View {
         let stats = entry.status == .connected ? manager.stats[id] : nil
-        return VStack(alignment: .leading, spacing: 44) {
+        return VStack(alignment: .leading, spacing: 32) {
             HStack(alignment: .top, spacing: 40) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(entry.name)
@@ -114,7 +113,7 @@ struct ProfileDetail: View {
     private func statsSection(_ entry: TunnelManager.Entry, _ stats: LiveStats?) -> some View {
         if let stats, let tunnel = stats.tunnel {
             VStack(alignment: .leading, spacing: 32) {
-                Grid(alignment: .leading, horizontalSpacing: 64, verticalSpacing: 32) {
+                Grid(alignment: .leading, horizontalSpacing: 64, verticalSpacing: 20) {
                     GridRow {
                         if let connected = stats.connectedFor {
                             UTStat("Connected for", StatsFormat.duration(connected))
@@ -140,7 +139,7 @@ struct ProfileDetail: View {
                     .frame(maxWidth: 1300, alignment: .leading)
                 }
             }
-            .utPanel(padding: 52)
+            .utPanel(padding: 40)
         } else if entry.status == .connected {
             Text("Getting the connection's stats…")
                 .foregroundStyle(UTColor.muted)
@@ -153,10 +152,10 @@ struct ProfileDetail: View {
     }
 
     private func autoConnectSection(_ entry: TunnelManager.Entry) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        HStack(spacing: 48) {
             Toggle("Connect Automatically", isOn: Binding(get: { entry.connectsAutomatically }, set: { setAutomatic(entry, $0) }))
                 .toggleStyle(UTToggleStyle(systemImage: "arrow.triangle.2.circlepath"))
-                .frame(maxWidth: 1000)
+                .frame(width: 820)
             Text("When on, this Apple TV connects to this profile by itself: at startup, after sleep and when the network changes, without opening the app. One profile at a time.")
                 .font(.utCaption)
                 .foregroundStyle(UTColor.muted)
