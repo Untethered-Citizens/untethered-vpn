@@ -164,6 +164,17 @@ struct StatsFormatTests {
     }
 
     @Test(arguments: [
+        ("1 hour 12 minutes", ["1|hour", "12|minutes"]),
+        ("13 seconds ago", ["13|seconds ago"]),
+        ("1.4 GB", ["1.4|GB"]),
+        ("Never", ["Never|"]),
+        ("", []),
+    ])
+    func parts(text: String, expected: [String]) {
+        #expect(StatsFormat.parts(text).map { "\($0.number)|\($0.unit)" } == expected)
+    }
+
+    @Test(arguments: [
         ("vpn.example.com:51820", nil, "vpn.example.com:51820"),
         ("vpn.example.com:51820", "203.0.113.5:51820", "vpn.example.com:51820 (203.0.113.5)"),
         ("vpn.example.com:51820", "203.0.113.5:4500", "vpn.example.com:51820 (203.0.113.5:4500)"),

@@ -18,16 +18,23 @@ struct HomeView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 56) {
             HStack {
-                Label("Untethered VPN", systemImage: "network.badge.shield.half.filled")
-                    .font(.title2.bold())
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 24) {
+                    Image("UTMark")
+                        .resizable()
+                        .frame(width: 80, height: 80)
+                        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .accessibilityHidden(true)
+                    Text("Untethered VPN")
+                        .font(.utHeadline)
+                }
                 Spacer()
-                HStack(spacing: 40) {
+                HStack(spacing: 28) {
                     if !manager.entries.isEmpty {
                         Button("Add Profile", systemImage: "plus", action: add)
                     }
                     Button("Settings", systemImage: "gearshape") { settings = SettingsRequest() }
                 }
+                .buttonStyle(.utSecondary)
             }
             // The whole bar is a focus target, so swiping up from a profile on
             // the left still reaches Add Profile and Settings on the right
@@ -53,7 +60,7 @@ struct HomeView: View {
         // tvOS draws the editor over the home screen without a background of its own
         .opacity(editor == nil && adding == nil && detail == nil && settings == nil ? 1 : 0)
         .padding(80)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .utScreen()
         .task(id: scenePhase) {
             if scenePhase == .active { await reload() }
         }
@@ -142,7 +149,7 @@ struct HomeView: View {
             Text("A profile holds the settings for your own WireGuard server. Once you add one, you can connect this Apple TV to it from here.")
         } actions: {
             Button("Add Profile", systemImage: "plus", action: add)
-                .font(.title3.bold())
+                .buttonStyle(.utHero)
         }
         .frame(maxWidth: 1100)
         .frame(maxWidth: .infinity)

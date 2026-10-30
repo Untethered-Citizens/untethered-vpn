@@ -101,6 +101,23 @@ enum StatsFormat {
         return "\(number) \(units[index])"
     }
 
+    /// A formatted value split into numbers and the words after them, so the
+    /// numbers can be shown larger: "1 hour 12 minutes" is ("1", "hour") and
+    /// ("12", "minutes"). Text with no number, like "Never", is one part
+    /// with no unit.
+    static func parts(_ text: String) -> [(number: String, unit: String)] {
+        var parts: [(number: String, unit: String)] = []
+        for word in text.split(separator: " ").map(String.init) {
+            if word.first?.isNumber == true || parts.isEmpty {
+                parts.append((word, ""))
+            } else {
+                let last = parts.count - 1
+                parts[last].unit += parts[last].unit.isEmpty ? word : " " + word
+            }
+        }
+        return parts
+    }
+
     /// The server as configured, with the address in use when it differs:
     /// `vpn.example.com:51820 (203.0.113.5)`. The port is left out of the
     /// address when it's the same as the configured one.
