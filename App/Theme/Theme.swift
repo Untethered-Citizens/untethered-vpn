@@ -438,6 +438,13 @@ extension View {
             .font(.utBody)
     }
 
+    /// Text that takes focus only so the remote can scroll to it (About,
+    /// the Tunnel Log): a soft green ground while focused, no lift.
+    func utReadingHighlight(_ focused: Bool, radius: CGFloat = 16) -> some View {
+        background(focused ? UTColor.greenSoft : .clear,
+                   in: RoundedRectangle(cornerRadius: radius, style: .continuous))
+    }
+
     /// A content panel: the hero card, stats, review columns, help.
     func utPanel(radius: CGFloat = UTMetrics.panelRadius, padding: CGFloat = 56) -> some View {
         self.padding(padding)
