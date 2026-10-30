@@ -40,27 +40,40 @@ enum UTMetrics {
 
 /// Barlow for text, Barlow Condensed for section titles and numbers. Each
 /// size is relative to a text style, so it follows the system text size.
-/// Until the fonts are bundled, SwiftUI falls back to the system font.
+/// The fonts are in Fonts/ and listed under `UIAppFonts`; a name that
+/// doesn't match falls back to the system font, so a test checks them.
 enum UTFont {
-    enum Weight { case regular, medium, semibold, bold }
+    enum Weight: CaseIterable { case regular, medium, semibold, bold }
 
     static func barlow(_ size: CGFloat, _ weight: Weight = .regular, relativeTo style: Font.TextStyle = .body) -> Font {
-        let name = switch weight {
+        .custom(barlowName(weight), size: size, relativeTo: style)
+    }
+
+    static func condensed(_ size: CGFloat, _ weight: Weight = .semibold, relativeTo style: Font.TextStyle = .body) -> Font {
+        .custom(condensedName(weight), size: size, relativeTo: style)
+    }
+
+    static func barlowName(_ weight: Weight) -> String {
+        switch weight {
         case .regular: "Barlow-Regular"
         case .medium: "Barlow-Medium"
         case .semibold: "Barlow-SemiBold"
         case .bold: "Barlow-Bold"
         }
-        return .custom(name, size: size, relativeTo: style)
     }
 
-    static func condensed(_ size: CGFloat, _ weight: Weight = .semibold, relativeTo style: Font.TextStyle = .body) -> Font {
-        let name = switch weight {
+    /// Barlow Condensed has no Regular here; it uses Medium.
+    static func condensedName(_ weight: Weight) -> String {
+        switch weight {
         case .regular, .medium: "BarlowCondensed-Medium"
         case .semibold: "BarlowCondensed-SemiBold"
         case .bold: "BarlowCondensed-Bold"
         }
-        return .custom(name, size: size, relativeTo: style)
+    }
+
+    /// Every font name the theme can ask for.
+    static var allNames: Set<String> {
+        Set(Weight.allCases.flatMap { [barlowName($0), condensedName($0)] })
     }
 }
 
@@ -341,6 +354,8 @@ struct UTStat: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
         }
+        // Take the whole cell, so the numbers shrink only when they must
+        .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
         .accessibilityValue(value)
