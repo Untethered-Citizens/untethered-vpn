@@ -17,6 +17,13 @@ struct ThemeTests {
         #expect(Set(listed) == Set(UTFont.allNames.map { "\($0).ttf" }))
     }
 
+    /// A missing image draws nothing, so check every symbol the app names.
+    @Test(arguments: [TunnelStatus.disconnected, .connecting, .connected, .disconnecting, .failed("")]
+          .map(StatusLabel.symbol(for:)) + ["ut.phone", "ut.keyboard"])
+    func symbolExists(name: String) {
+        #expect(UIImage(named: name) != nil)
+    }
+
     @Test func licenceIsShown() throws {
         let licences = try #require(LicenceDocument.bundled())
         #expect(licences.blocks.contains(.heading("Barlow and Barlow Condensed")))

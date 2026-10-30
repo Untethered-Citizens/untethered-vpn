@@ -37,11 +37,11 @@ struct AddProfileView: View {
             }
 
             HStack(spacing: 60) {
-                option("Use Your Phone", systemImage: "qrcode.viewfinder",
+                option("Use Your Phone", symbol: "ut.phone",
                        detail: "Scan a code on this screen, then paste your config or choose its file on the phone. Easiest for long keys.") {
                     method = .phone(PhoneImport())
                 }
-                option("Type It In", systemImage: "keyboard",
+                option("Type It In", symbol: "ut.keyboard",
                        detail: "Enter each setting with the remote or your iPhone's keyboard.") {
                     method = .manual
                 }
@@ -53,11 +53,10 @@ struct AddProfileView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    private func option(_ title: String, systemImage: String, detail: String, action: @escaping () -> Void) -> some View {
+    private func option(_ title: String, symbol: String, detail: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 20) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 72))
+                UTSymbol(symbol, size: 84)
                 Text(title)
                     .font(.title3.bold())
                 Text(detail)
