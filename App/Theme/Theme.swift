@@ -247,6 +247,51 @@ extension ButtonStyle where Self == UTCardButtonStyle {
     static var utCard: UTCardButtonStyle { UTCardButtonStyle() }
 }
 
+/// A text field as a row: the label with its hint (or problem, in plum)
+/// on the left, the field on the right. Selecting it opens the tvOS
+/// keyboard. The field is the focus target, so the row follows `focused`.
+struct UTFieldRow<Field: View>: View {
+    let label: String
+    let note: String
+    var isProblem = false
+    let focused: Bool
+    @ViewBuilder let field: Field
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: UTMetrics.rowRadius, style: .continuous)
+        HStack(alignment: .center, spacing: 40) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(label)
+                    .font(.utRowTitle)
+                Group {
+                    if isProblem {
+                        Label(note, systemImage: "exclamationmark.circle.fill")
+                            .foregroundStyle(focused ? UTColor.onAccent : UTColor.plum)
+                    } else {
+                        Text(note)
+                            .foregroundStyle(focused ? UTColor.onAccent : UTColor.muted)
+                    }
+                }
+                .font(.utCaption)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(width: 560, alignment: .leading)
+            .foregroundStyle(focused ? UTColor.onAccent : UTColor.ink)
+            // tvOS draws its own platter behind a text field and picks the
+            // text colour to suit it, so the field keeps the system colours
+            field
+                .font(UTFont.barlow(34, .medium))
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, 40)
+        .padding(.vertical, 22)
+        .frame(maxWidth: .infinity, minHeight: UTMetrics.rowMinHeight, alignment: .leading)
+        .background(shape.fill(focused ? UTColor.green : UTColor.panel))
+        .overlay(shape.strokeBorder(focused ? .clear : (isProblem ? UTColor.plum : UTColor.rule), lineWidth: 2))
+        .modifier(UTFocusLift(focused: focused, scale: UTMetrics.rowFocusScale))
+    }
+}
+
 /// Icon, title, optional subtitle and a chevron, for Settings-style rows.
 struct UTRowLabel: View {
     let title: String
