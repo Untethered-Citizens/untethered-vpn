@@ -103,6 +103,8 @@ private struct UTFocusLift: ViewModifier {
         content
             .environment(\.utFocused, focused)
             .scaleEffect(focused ? scale : 1)
+            // One shadow for the whole control, not one behind each piece of text
+            .compositingGroup()
             .shadow(color: focused ? shadow : .clear, radius: 22, y: focused ? 22 : 0)
             .animation(reduceMotion ? nil : .easeOut(duration: 0.16), value: focused)
     }
@@ -142,7 +144,8 @@ private struct UTButtonBody: View {
             .font(hero ? .utHeroButton : .utButton)
             .foregroundStyle(text)
             .lineLimit(1)
-            .padding(.horizontal, hero ? 72 : 52)
+            .fixedSize()
+            .padding(.horizontal, hero ? 72 : 44)
             .frame(minWidth: hero ? 460 : nil, minHeight: hero ? UTMetrics.heroButtonHeight : UTMetrics.buttonHeight)
             .background(Capsule().fill(fill))
             .opacity(isEnabled ? 1 : 0.5)

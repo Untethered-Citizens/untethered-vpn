@@ -81,7 +81,7 @@ struct ProfileDetail: View {
 
             autoConnectSection(entry)
 
-            HStack(spacing: 40) {
+            HStack(spacing: 28) {
                 Button {
                     toggle(entry)
                 } label: {

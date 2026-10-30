@@ -134,6 +134,7 @@ struct ProfileReview: View {
                 HStack(alignment: .firstTextBaseline, spacing: 24) {
                     Text(label)
                         .foregroundStyle(UTColor.muted)
+                        .fixedSize(horizontal: false, vertical: true)
                         .frame(width: 300, alignment: .leading)
                     VStack(alignment: .leading, spacing: 6) {
                         Text(value)
