@@ -31,6 +31,15 @@ struct ThemeTests {
         #expect(UIImage(named: try #require(launch["UIImageName"])) != nil)
     }
 
+    /// The asset catalog writes these when it finds the layered icon and Top Shelf images.
+    @Test func iconAndTopShelfAreBuilt() throws {
+        let icons = try #require(Bundle.main.object(forInfoDictionaryKey: "CFBundleIcons") as? [String: Any])
+        #expect(icons["CFBundlePrimaryIcon"] as? String == "App Icon")
+        let topShelf = try #require(Bundle.main.object(forInfoDictionaryKey: "TVTopShelfImage") as? [String: String])
+        #expect(topShelf["TVTopShelfPrimaryImage"] == "Top Shelf Image")
+        #expect(topShelf["TVTopShelfPrimaryImageWide"] == "Top Shelf Image Wide")
+    }
+
     @Test func licenceIsShown() throws {
         let licences = try #require(LicenceDocument.bundled())
         #expect(licences.blocks.contains(.heading("Barlow and Barlow Condensed")))
