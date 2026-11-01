@@ -1,0 +1,63 @@
+# Builds the app (with the wireguard-go library) and runs the unit tests in a
+# tvOS simulator, the same way as the test command in ARCHITECTURE.md.
+# Tunnel behaviour still has to be checked on a real Apple TV.
+name: Build and test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The Makefile only accepts Go 1.27.x (its runtime patch is tied to it).
+      - name: Install Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 1.27.3
+          cache: false
+
+      - name: Show versions
+        run: |
+          sw_vers
+          xcodebuild -version
+          go version
+          xcrun simctl list runtimes tvOS
+
+      # Use the first Apple TV simulator the runner has, so a renamed device
+      # model doesn't break the build.
+      - name: Pick a simulator
+        run: |
+          udid=$(xcrun simctl list devices available --json \
+            | jq -r '[.devices | to_entries[] | select(.key | contains("tvOS")) | .value[] | select(.name | startswith("Apple TV"))][0].udid')
+          if [ -z "$udid" ] || [ "$udid" = "null" ]; then
+            echo "No Apple TV simulator found" >&2
+            exit 1
+          fi
+          xcrun simctl list devices | grep "$udid"
+          echo "SIMULATOR_UDID=$udid" >> "$GITHUB_ENV"
+
+      - name: Build and test
+        run: |
+          xcodebuild -scheme UntetheredVPN \
+            -destination "id=$SIMULATOR_UDID" \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
+            -parallel-testing-enabled NO \
+            CODE_SIGNING_ALLOWED=NO \
+            test
