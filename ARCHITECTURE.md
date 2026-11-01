@@ -2,6 +2,18 @@
 
 How Untethered VPN is put together and how to build it. Keep this file in step with the code.
 
+## Non-negotiables
+
+Every change has to keep these. A pull request that would break one isn't merged, however useful it is. [SECURITY.md](SECURITY.md) explains the threat model behind them.
+
+- **Keys never leak.** Private and preshared keys live only in the Keychain, shared with the tunnel extension through an access group. They never appear in logs, the Tunnel Log, exports, review screens (masked), crash output, source, test fixtures or the repository.
+- **No traffic but the tunnel.** The app's only network activity is the WireGuard tunnel and, while the import screen is showing, the import server. No analytics, ads, third-party SDKs, update checks or CDN calls; every web asset is served from the app bundle.
+- **The import server stays tightly limited.** It listens only while the import screen is visible, never in the background. It takes one random one-time token in the URL path, a profile encrypted on the phone with a per-session key in the URL fragment, one successful submission and requests of at most 16 KB. It shuts down on success, cancel or a 5-minute timeout, and never logs request bodies.
+- **Nothing is saved without confirmation on the TV.** Every import shows a parsed preview with the keys masked, and the user confirms it with the remote.
+- **The Siri Remote alone** reaches every action, with large focus targets that can be read across a room.
+- **Clean licensing.** No code from, or derived from, GPL projects. Every vendored component's licence is in `THIRD_PARTY_LICENSES.md`.
+- **No accounts, servers of ours, analytics, ads or tracking.**
+
 ## Layout
 
 ```
