@@ -185,6 +185,8 @@ xcodebuild -scheme UntetheredVPN \
 
 Parallel testing clones the simulator, which takes minutes; the suite itself runs in well under a second.
 
+CI runs the same build and tests on every pull request and every push to `main` (`.github/workflows/build-test.yml`, on GitHub's `xcode-27` runner with Go 1.27.3), alongside the gitleaks secret scan (`secret-scan.yml`).
+
 Device build: put your team ID in `Config.xcconfig` (copy `Config.sample.xcconfig`), then:
 
 ```sh
