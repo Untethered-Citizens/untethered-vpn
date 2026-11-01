@@ -4,6 +4,13 @@
 A free, open-source tvOS client for WireGuard® that connects your Apple TV to the server you already run.</p>
 
 <p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/home-screen-dark.png">
+    <img src="docs/images/home-screen-light.png" width="800" alt="The Untethered VPN home screen on Apple TV, showing a profile named Home connected to vpn.example.com, with the last handshake, data received and sent, and Disconnect and Details buttons">
+  </picture>
+</p>
+
+<p align="center">
   Free and open source · No accounts · No ads, analytics or tracking · No subscription
 </p>
 
