@@ -413,7 +413,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "Untethered VPN";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.9.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_ID)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -430,7 +430,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "Untethered VPN";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.9.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_ID)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -445,7 +445,7 @@
 				INFOPLIST_FILE = "Support/UntetheredVPNTunnel-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = UntetheredVPNTunnel;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.9.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(TUNNEL_BUNDLE_ID)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -461,7 +461,7 @@
 				INFOPLIST_FILE = "Support/UntetheredVPNTunnel-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = UntetheredVPNTunnel;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.9.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(TUNNEL_BUNDLE_ID)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -490,7 +490,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.9.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_ID).tests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/UntetheredVPN.app/UntetheredVPN";
@@ -503,7 +503,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.9.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_ID).tests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/UntetheredVPN.app/UntetheredVPN";
