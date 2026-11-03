@@ -11,7 +11,8 @@ A free, open-source tvOS client for WireGuard® that connects your Apple TV to t
 </p>
 
 <p align="center">
-  Free and open source · No accounts · No ads, analytics or tracking · No subscription
+  Free and open source · No accounts · No ads, analytics or tracking · No subscription<br>
+  <a href="PRIVACY.md">Privacy policy</a>: it collects nothing
 </p>
 
 ---
