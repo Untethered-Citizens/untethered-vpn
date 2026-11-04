@@ -19,7 +19,7 @@ A free, open-source tvOS client for WireGuard® that connects your Apple TV to t
 
 ## Status: beta
 
-Untethered VPN works, and it's in daily use on the maintainer's Apple TV, including from away from home. It's still a **beta**: expect rough edges, and please [open an issue](../../issues) when something doesn't work or isn't clear. There's no App Store version. You build it yourself and install it on your own Apple TV.
+Untethered VPN works, and it's in daily use on the maintainer's Apple TV, including from away from home. It's still a **beta**: expect rough edges, and please [open an issue](../../issues) when something doesn't work or isn't clear. There's no App Store version. You can install the beta with [TestFlight](#install-with-testflight), or [build it yourself](#build-from-source).
 
 ## What it does
 
@@ -32,11 +32,29 @@ Untethered VPN works, and it's in daily use on the maintainer's Apple TV, includ
 ## What you need
 
 - An **Apple TV** on **tvOS 26** or later
-- A **paid Apple Developer account** (the free account can't sign VPN extensions)
-- A **Mac** with **Xcode 27** (with the tvOS platform) and **Go 1.27** (`brew install go`)
 - A **WireGuard server** you run, and a peer config for the Apple TV: the `.conf` file with `[Interface]` and `[Peer]` sections
 
-## Build and install
+The app doesn't come with a server.
+
+## Install with TestFlight
+
+This is the easy way. You also need an iPhone, iPad or Mac to accept the invitation.
+
+1. On the Apple TV, install **TestFlight** from the App Store and sign in with your Apple Account.
+2. On your iPhone, iPad or Mac, install TestFlight, signed in with the same Apple Account.
+3. On that device, open the [public beta link](https://testflight.apple.com/join/F1vgu28N) and accept the invitation.
+4. On the Apple TV, open TestFlight and install Untethered VPN.
+
+Each TestFlight build stops working 90 days after it's uploaded, and TestFlight shows how many days are left. When a newer build is available, install it from TestFlight. The beta may not be available in France.
+
+## Build from source
+
+Choose this to run your own copy, or if TestFlight isn't an option. You need:
+
+- A **paid Apple Developer account** (the free account can't sign VPN extensions)
+- A **Mac** with **Xcode 27** (with the tvOS platform) and **Go 1.27** (`brew install go`)
+
+Then:
 
 1. Clone this repository.
 2. Copy `Config.sample.xcconfig` to `Config.xcconfig` in the same folder (it's git-ignored) and set `DEVELOPMENT_TEAM` to your 10-character team ID (Xcode → Settings → Accounts). To use your own bundle IDs, change `APP_BUNDLE_ID` there too.
