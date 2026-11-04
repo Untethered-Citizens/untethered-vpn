@@ -1,6 +1,6 @@
 # Privacy policy
 
-*Effective 2026-11-03*
+*Effective 2026-11-04*
 
 Untethered VPN collects nothing about you and sends nothing anywhere except through the WireGuard tunnel you set up. There are no accounts, no analytics, no ads, no tracking, no crash reporting and no servers of ours.
 
@@ -18,6 +18,10 @@ None of this leaves the Apple TV unless you choose to show or send it: for examp
 - **The import page, only while Use Your Phone is showing.** The Apple TV runs a small web server on your local network so your phone can send it a profile. The phone encrypts the profile before sending it, the server accepts one profile and then stops, and it never logs what it receives. [SECURITY.md](https://github.com/Untethered-Citizens/untethered-vpn/blob/main/SECURITY.md) explains how it works.
 
 The app makes no other connections: no update checks, no fonts or scripts from the web, and no third-party code that phones home.
+
+## If you install with TestFlight
+
+TestFlight is Apple's service, not part of this app, and Apple's own privacy terms apply to it. Apple gives the developer beta testing information such as session and crash counts, crash reports, and any feedback you choose to send. People who join through the public link show up as anonymous. The app itself still collects and sends nothing.
 
 ## Children
 
