@@ -34,7 +34,28 @@ Untethered VPN works, and it's in daily use on the maintainer's Apple TV, includ
 - An **Apple TV** on **tvOS 26** or later
 - A **WireGuard server** you run, and a peer config for the Apple TV: the `.conf` file with `[Interface]` and `[Peer]` sections
 
-The app doesn't come with a server.
+The app doesn't come with a server: see [Set up a WireGuard server](#set-up-a-wireguard-server).
+
+<!-- The app's tutorial links here with a QR code. Don't rename this heading: the link depends on its anchor, #set-up-a-wireguard-server. -->
+## Set up a WireGuard server
+
+Untethered VPN is the Apple TV half of the connection. The other half is a WireGuard server that you run, usually at home, so that streaming apps see your home connection wherever the Apple TV is. This project doesn't include a server: setting one up is a well-covered task, with many free guides and videos.
+
+A few popular ways to run one (there are many more):
+
+- **[LinuxServer.io's WireGuard container](https://docs.linuxserver.io/images/docker-wireguard)** for Docker, on a NAS or a home server. It can create peer configs and QR codes for you.
+- **[wg-easy](https://github.com/wg-easy/wg-easy)**, a Docker container with a web page for adding devices and downloading their configs.
+- **[PiVPN](https://pivpn.io)** on a Raspberry Pi.
+- **A router or firewall with WireGuard built in.** Many have it; check your router's documentation.
+- **By hand** on Linux, macOS or Windows, following WireGuard's own [installation](https://www.wireguard.com/install/) and [quick start](https://www.wireguard.com/quickstart/) pages.
+
+Whichever you choose, the Apple TV needs:
+
+1. **A way to reach the server from outside your home.** Forward one UDP port on your router to the server (WireGuard's usual port is 51820), and use an address that stays the same: a fixed IP or a dynamic DNS name. If your internet provider uses CGNAT, port forwarding won't work; ask them for a public IP, or run the server somewhere that has one.
+2. **Its own peer.** Add a new peer just for the Apple TV rather than sharing one with another device. To send all of the TV's traffic home, use `AllowedIPs = 0.0.0.0/0, ::/0`, and set a `DNS` server.
+3. **The peer's config:** the `.conf` file (or its text) with `[Interface]` and `[Peer]` sections. Then follow [Adding a profile](#adding-a-profile).
+
+Test the server with the WireGuard app on a phone or laptop away from your home network first. If it works there, it will work on the Apple TV.
 
 ## Install with TestFlight
 
