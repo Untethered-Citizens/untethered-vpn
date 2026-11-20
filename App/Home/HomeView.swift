@@ -14,6 +14,8 @@ struct HomeView: View {
     @State private var detail: DetailRequest?
     @State private var renaming: RenameRequest?
     @State private var settings: SettingsRequest?
+    @State private var tutorial: TutorialRequest?
+    @State private var tutorialChecked = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 56) {
@@ -58,11 +60,14 @@ struct HomeView: View {
             .focusSection()
         }
         // tvOS draws the editor over the home screen without a background of its own
-        .opacity(editor == nil && adding == nil && detail == nil && settings == nil ? 1 : 0)
+        .opacity(editor == nil && adding == nil && detail == nil && settings == nil && tutorial == nil ? 1 : 0)
         .padding(80)
         .utScreen()
         .task(id: scenePhase) {
-            if scenePhase == .active { await reload() }
+            if scenePhase == .active {
+                await reload()
+                offerTutorialOnce()
+            }
         }
         // Stats for the connected profile, about once a second while the app is in front
         .task(id: scenePhase == .active ? connectedID : nil) {
@@ -92,6 +97,10 @@ struct HomeView: View {
             SettingsView(log: manager.tunnelLog, done: { settings = nil }, startsOn: request.startsOn)
                 .preferredColorScheme(UntetheredVPNApp.debugColorScheme)
         }
+        .fullScreenCover(item: $tutorial) { request in
+            TutorialView(startsOn: request.startsOn) { tutorial = nil }
+                .preferredColorScheme(UntetheredVPNApp.debugColorScheme)
+        }
         .fullScreenCover(item: $adding) { request in
             AddProfileView(manager: manager, done: { adding = nil }, method: request.method)
                 .preferredColorScheme(UntetheredVPNApp.debugColorScheme)
@@ -112,6 +121,10 @@ struct HomeView: View {
             case "log": settings = SettingsRequest(startsOn: .log)
             case "about": settings = SettingsRequest(startsOn: .about)
             default: break
+            }
+            // Launch with `-sampleTutorial 1…6` to open How It Works on that card
+            if let card = TutorialCard(rawValue: UserDefaults.standard.integer(forKey: "sampleTutorial") - 1) {
+                tutorial = TutorialRequest(startsOn: card)
             }
             // Launch with `-sampleRename <name>` to open Rename for the first
             // profile with that name typed in
@@ -144,9 +157,11 @@ struct HomeView: View {
 
     private var emptyState: some View {
         UTMessageScreen(symbol: "ut.tv.connecting", title: "No profiles yet",
-                        message: "A profile holds the settings for your own WireGuard server. Once you add one, you can connect this Apple TV to it from here.") {
+                        message: "A profile holds the settings for your own WireGuard server. This app doesn't include a server: you run one yourself, usually at home. Once you add a profile, you can connect this Apple TV to it from here.") {
             Button("Add Profile", systemImage: "plus", action: add)
                 .buttonStyle(.utHero)
+            Button("How It Works", systemImage: "questionmark.circle") { tutorial = TutorialRequest() }
+                .buttonStyle(.utSecondary)
         }
     }
 
@@ -193,6 +208,18 @@ struct HomeView: View {
                 errorMessage = "“\(entry.name)” couldn't be deleted. \(error.localizedDescription)"
             }
         }
+    }
+
+    /// Offers How It Works by itself once, on a launch with no profiles,
+    /// unless something else is already on screen.
+    private func offerTutorialOnce() {
+        guard !tutorialChecked else { return }
+        tutorialChecked = true
+        let prompt = TutorialPrompt(defaults: .standard)
+        guard prompt.shouldOffer(hasProfiles: !manager.entries.isEmpty),
+              editor == nil, adding == nil, detail == nil, settings == nil, tutorial == nil else { return }
+        prompt.markOffered()
+        tutorial = TutorialRequest()
     }
 
     private func reload() async {

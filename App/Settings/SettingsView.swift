@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Settings, opened from the home screen's header: the Tunnel Log and About.
+/// Settings, opened from the home screen's header: How It Works, the Tunnel
+/// Log and About.
 struct SettingsView: View {
     let log: TunnelLog?
     let done: () -> Void
@@ -9,7 +10,7 @@ struct SettingsView: View {
     @State private var path: [Page] = []
 
     enum Page: Hashable {
-        case log, about
+        case howItWorks, log, about
     }
 
     var body: some View {
@@ -30,6 +31,8 @@ struct SettingsView: View {
                     Text("Settings")
                         .font(.utTitle)
 
+                    link(.howItWorks, "How It Works", "questionmark.circle",
+                         "What you need, how to add a profile and connect, and tips for hotel Wi-Fi.")
                     link(.log, "Tunnel Log", "list.bullet.rectangle",
                          "What the VPN did recently, with keys and addresses hidden. Useful when something goes wrong.")
                     link(.about, "About Untethered VPN", "info.circle",
@@ -47,6 +50,8 @@ struct SettingsView: View {
             .onExitCommand(perform: done)
             .navigationDestination(for: Page.self) { page in
                 switch page {
+                case .howItWorks: TutorialView { path.removeAll() }
+                        .toolbar(.hidden, for: .navigationBar)
                 case .log: TunnelLogView(log: log)
                 case .about: AboutView()
                 }
